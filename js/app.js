@@ -1,4 +1,3 @@
-<script>
 /* ============================================================
    School Hub Pro - student client, v3.1
    ============================================================ */
@@ -1691,4 +1690,3 @@ function loadMyBugs() {
   const t = document.getElementById('bug-details');
   if (t) t.addEventListener('input', updateBugCount);
 })();
-</script>
