@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v4.1
+   School Hub Pro - student client, v4.2
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -142,7 +142,7 @@ function toast(message, type, duration, action) {
 /* ============================================================
    BACK-BUTTON NAVIGATION
    Pushes one history entry per view. Android hardware back pops
-   through the stack. When we hit the base entry, we stop
+   through the stack. When the stack bottoms out, we stop
    intercepting and let the browser close the PWA / leave the page.
    ============================================================ */
 let historyPrimed = false;
@@ -150,7 +150,7 @@ let suppressNextPush = false;
 
 function primeHistory(initialView) {
   try {
-    history.replaceState({ shpView: initialView || 'home', shpBase: true }, '');
+    history.replaceState({ shpView: initialView || 'home' }, '');
     historyPrimed = true;
   } catch (e) { historyPrimed = false; }
 }
@@ -174,10 +174,12 @@ window.addEventListener('popstate', function(e) {
 
   const st = e.state;
 
-  // Popped past all our entries → let the browser handle it (exit PWA).
-  if (!st || st.shpBase) return;
+  // No state or unrecognised state → we've popped past our own entries.
+  // Let the browser handle it: on Android PWA, this exits the app.
+  if (!st || !st.shpView) return;
 
-  if (st.shpView && st.shpView !== document.body.getAttribute('data-view')) {
+  // Navigate to the view described by the popped-to state.
+  if (st.shpView !== document.body.getAttribute('data-view')) {
     suppressNextPush = true;
     show(st.shpView);
     suppressNextPush = false;
