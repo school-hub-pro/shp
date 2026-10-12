@@ -3,32 +3,44 @@
    Caches the app shell so the PWA installs and works offline.
    Backend calls always go to the network — they are never cached.
    ============================================================ */
-const CACHE_NAME = 'shp-shell-v1';
+const CACHE_NAME = 'shp-shell-v2';
 const SHELL = [
   './',
   './index.html',
   './css/style.css',
   './js/api.js',
   './js/app.js',
-  './manifest.json'
+  './manifest.json',
+  './favicon.png'
 ];
 
+/* Install: pre-cache the shell. Individual failures don't block install. */
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(SHELL).catch(() => {}))
+      .then(cache => Promise.all(
+        SHELL.map(url =>
+          cache.add(url).catch(err => {
+            console.warn('[sw] failed to cache', url, err && err.message);
+          })
+        )
+      ))
       .then(() => self.skipWaiting())
   );
 });
 
+/* Activate: drop any old caches, take control of open pages. */
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      ))
       .then(() => self.clients.claim())
   );
 });
 
+/* Fetch: network-first for same-origin. Falls back to cache when offline. */
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -44,12 +56,20 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(req)
       .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then(c => c.put(req, copy)).catch(() => {});
+        // Only cache successful basic responses.
+        if (res && res.status === 200 && res.type === 'basic') {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(req, copy)).catch(() => {});
+        }
         return res;
       })
       .catch(() =>
-        caches.match(req).then(cached => cached || caches.match('./index.html'))
+        caches.match(req).then(cached => {
+          if (cached) return cached;
+          // Navigation requests that miss the cache fall back to the app shell.
+          if (req.mode === 'navigate') return caches.match('./index.html');
+          return new Response('', { status: 504, statusText: 'Offline' });
+        })
       )
   );
 });
