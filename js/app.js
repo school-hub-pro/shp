@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.3
+   School Hub Pro - student client, v3.4
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1601,4 +1601,49 @@ function loadMyBugs() {
 (function wireBugForm() {
   const t = document.getElementById('bug-details');
   if (t) t.addEventListener('input', updateBugCount);
+})();
+
+/* ============================================================
+   LEGAL MODAL — Privacy Policy / Terms & Conditions
+   ============================================================ */
+(function wireLegalModal() {
+  const btn = document.getElementById('legal-btn');
+  const overlay = document.getElementById('legal-overlay');
+  const closeBtn = document.getElementById('legal-close');
+  if (!btn || !overlay || !closeBtn) return;
+
+  function openLegal(tab) {
+    overlay.classList.remove('hidden');
+    if (tab) setLegalTab(tab);
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLegal() {
+    overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  function setLegalTab(name) {
+    document.querySelectorAll('.legal-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.legalTab === name);
+    });
+    document.querySelectorAll('.legal-pane').forEach(p => {
+      p.classList.toggle('active', p.id === 'legal-' + name);
+    });
+    const body = overlay.querySelector('.legal-body');
+    if (body) body.scrollTop = 0;
+  }
+
+  btn.addEventListener('click', () => openLegal('privacy'));
+  closeBtn.addEventListener('click', closeLegal);
+
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeLegal();
+  });
+
+  document.querySelectorAll('.legal-tab').forEach(tab => {
+    tab.addEventListener('click', () => setLegalTab(tab.dataset.legalTab));
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !overlay.classList.contains('hidden')) closeLegal();
+  });
 })();
