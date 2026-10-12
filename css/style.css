@@ -332,40 +332,71 @@ textarea.set-input { resize: vertical; line-height: 1.55; font-size: 13px; font-
 @media (max-width: 768px) { .bug-row { grid-template-columns: 1fr; } }
 
 /* ============================================================
-   LEGAL — floating "i" button + Privacy / Terms modal
+   LEGAL — floating pill button + Privacy / Terms modal
    ============================================================ */
 .legal-btn {
   position: fixed;
   bottom: 18px;
   right: 18px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  height: 38px;
+  padding: 0 16px 0 8px;
+  border-radius: 19px;
   border: 1px solid var(--border);
   background: var(--card-bg);
   color: var(--sub);
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-family: 'Inter', serif;
-  font-style: italic;
-  font-weight: 800;
-  font-size: 16px;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
   line-height: 1;
-  padding: 0;
+  letter-spacing: .2px;
   z-index: 8000;
   backdrop-filter: blur(10px);
-  transition: background-color .2s, color .2s, border-color .2s, transform .15s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+  transition: background-color .2s, color .2s, border-color .2s, transform .15s, box-shadow .2s;
 }
 .legal-btn:hover {
   color: var(--primary);
   border-color: var(--primary);
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, .25);
 }
-.legal-btn b { font-weight: 800; }
+.legal-btn-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.legal-btn-text {
+  white-space: nowrap;
+  font-size: 12px;
+}
 @media (max-width: 768px) {
-  .legal-btn { bottom: 84px; right: 14px; width: 30px; height: 30px; font-size: 14px; }
+  .legal-btn {
+    bottom: 18px;
+    right: 14px;
+    height: 34px;
+    padding: 0 14px 0 7px;
+    gap: 7px;
+    font-size: 11px;
+  }
+  .legal-btn-icon { width: 20px; height: 20px; font-size: 11px; }
+  .legal-btn-text { font-size: 11px; }
+  /* When logged in, mobile nav appears at the bottom — lift the pill above it */
+  body[data-logged-in="true"] .legal-btn { bottom: 84px; }
 }
 
 .legal-overlay {
