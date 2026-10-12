@@ -4,7 +4,7 @@
    ============================================================ */
 (function () {
   // ⬇⬇ PASTE YOUR /exec URL BETWEEN THE QUOTES
-  var API_URL = 'https://script.google.com/macros/s/AKfy.../exec';
+  var API_URL = 'https://script.google.com/macros/s/AKfycbyVHZVgHFZb2Wn3_YqWdmtq9vDt7ykkSacUS1dLCBBwY9AcnJzIbh35RTfjtJnWrwhOFw/exec';
 
   async function callApi(action, args) {
     // Fail immediately if the browser knows we are offline.
