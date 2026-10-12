@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-logged-in="false">
+
+<div id="offline-banner">⚠ You are offline — changes will not be saved until you reconnect</div>
+<div id="toast-container"></div>
+
+<div id="portal">
+  <div class="spinner"></div>
+  <div style="font-weight:800;font-size:12px;letter-spacing:2px;color:var(--primary)">SYNCING...</div>
+</div>
+
+<div id="auth">
+  <div class="auth-box">
+    <h1 style="color:var(--primary);margin:0 0 3px;font-size:24px">School Hub Pro</h1>
+    <p style="color:var(--sub);margin:0 0 20px;font-size:12px;font-weight:600">Secure Portal</p>
+
+    <div id="auth-saved">
+      <p id="saved-greeting">WELCOME BACK</p>
+      <button type="button" class="btn" onclick="resumeSession()">Resume Session</button><br>
+      <button type="button" class="switch-user-link" onclick="clearSaved()">Use a different account</button>
+    </div>
+
+    <div id="auth-view-link-email" style="display:none;">
+      <h3 style="margin-top:0; margin-bottom:10px; font-size:16px; color:var(--primary);">Account Upgrade</h3>
+      <p style="color:var(--sub); font-size:12px; margin-top:0; margin-bottom:20px;">To better secure your data, we now require an email address. Please link one below.</p>
+      <input id="email-link-input" type="email" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--primary);background:var(--input-bg);color:var(--text);margin-bottom:15px" placeholder="Your Email Address" required>
+      <button type="button" class="btn" onclick="submitLinkEmail()">Link Email &amp; Continue</button>
+      <p id="link-err" style="color:#f43f5e;font-size:11px;margin-top:10px;min-height:16px"></p>
+    </div>
+
+    <div id="auth-view-signin">
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-signin" onclick="switchTab('SIGNIN')">Sign In</button>
+        <button type="button" class="auth-tab" id="tab-signup" onclick="switchTab('SIGNUP')">Sign Up</button>
+      </div>
+      <form onsubmit="event.preventDefault(); login();">
+        <input id="name-signup" type="text" style="display:none; width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);margin-bottom:12px" placeholder="Display Name">
+        <input id="login-id" type="text" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);margin-bottom:12px" placeholder="Email" required>
+        <input id="pass" type="password" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);margin-bottom:10px" placeholder="Password" required>
+        <div style="text-align:right; margin-bottom:15px;" id="forgot-pass-wrap">
+          <a href="#" style="font-size:11px; color:var(--sub); text-decoration:none;" onclick="showAuthView('forgot')">Forgot Password?</a>
+        </div>
+        <button type="submit" class="btn" id="auth-submit-btn">Sign In</button>
+      </form>
+    </div>
+
+    <div id="auth-view-forgot" style="display:none;">
+      <form onsubmit="event.preventDefault(); requestOTP();">
+        <h3 style="margin-top:0; margin-bottom:10px; font-size:16px;">Reset Password</h3>
+        <p style="color:var(--sub); font-size:12px; margin-top:0; margin-bottom:20px;">Enter your email to receive a 6-digit OTP.</p>
+        <input id="email-forgot" type="email" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);margin-bottom:15px" placeholder="Email Address" required>
+        <button type="submit" class="btn" id="btn-request-otp">Send OTP</button>
+        <a href="#" style="display:block; margin-top:15px; font-size:11px; color:var(--sub); text-decoration:none;" onclick="showAuthView('signin')">&#8249; Back to Sign In</a>
+      </form>
+    </div>
+
+    <div id="auth-view-reset" style="display:none;">
+      <form onsubmit="event.preventDefault(); submitNewPassword();">
+        <h3 style="margin-top:0; margin-bottom:10px; font-size:16px;">Enter OTP</h3>
+        <p style="color:var(--sub); font-size:12px; margin-top:0; margin-bottom:20px;">Check your email for the verification code.</p>
+        <input id="otp-input" type="text" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);margin-bottom:12px;letter-spacing:4px;text-align:center;font-size:18px;font-weight:bold;" placeholder="••••••" maxlength="6" required>
+        <input id="new-pass-input" type="password" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);margin-bottom:15px" placeholder="Enter New Password" required>
+        <button type="submit" class="btn" id="btn-reset-pass">Reset Password</button>
+        <a href="#" style="display:block; margin-top:15px; font-size:11px; color:var(--sub); text-decoration:none;" onclick="showAuthView('forgot')">&#8249; Resend OTP</a>
+      </form>
+    </div>
+
+    <p id="err" style="color:#f43f5e;font-size:11px;margin-top:10px;min-height:16px"></p>
+  </div>
+</div>
+
+<aside id="sidebar">
+  <div class="collapse-btn" onclick="toggleSidebar()">&#9666;</div>
+  <h1>School Hub Pro</h1>
+  <div class="nav-item active" onclick="show('home')"><b>🏠</b> <span>Dashboard</span></div>
+  <div class="nav-item" onclick="show('focus')"><b>⏱️</b> <span>Focus Mode</span></div>
+  <div class="nav-item" onclick="show('tt')"><b>📅</b> <span>Timetable</span></div>
+  <div class="nav-item" onclick="show('calendar')"><b>🗓️</b> <span>Planner</span></div>
+  <div class="nav-item" onclick="show('grades')"><b>📝</b> <span>Enter Grades</span></div>
+  <div class="nav-item" onclick="show('bugs')"><b>🐛</b> <span>Report a Bug</span></div>
+  <div style="margin-top:auto">
+    <div class="nav-item" style="margin-bottom:15px; background:transparent;" onclick="show('settings')"><b>⚙️</b> <span>Settings</span></div>
+    <button type="button" class="btn-side" onclick="toggleTheme()"><b>🌓</b> <span>Toggle Theme</span></button>
+    <button type="button" class="btn-side danger" onclick="logout()"><b>🚪</b> <span>Sign Out</span></button>
+  </div>
+</aside>
+
+<nav id="mobile-nav">
+  <div class="mob-nav-item active" onclick="show('home')"><b>🏠</b></div>
+  <div class="mob-nav-item" onclick="show('focus')"><b>⏱️</b></div>
+  <div class="mob-nav-item" onclick="show('tt')"><b>📅</b></div>
+  <div class="mob-nav-item" onclick="show('calendar')"><b>🗓️</b></div>
+  <div class="mob-nav-item" onclick="show('grades')"><b>📝</b></div>
+  <div class="mob-nav-item" onclick="show('bugs')"><b>🐛</b></div>
+  <div class="mob-nav-item" onclick="show('settings')"><b>⚙️</b></div>
+</nav>
+
+<main id="main">
+  <div class="dash-header">
+    <h2 style="margin:0;font-size:24px" id="welcome">Welcome</h2>
+    <div style="display:flex; gap:10px;">
+      <button type="button" class="action-btn theme-btn" onclick="toggleTheme()" title="Theme"><b>🌓</b></button>
+      <button type="button" class="action-btn" onclick="logout()" title="Logout"><b>🚪</b></button>
+    </div>
+  </div>
+
+  <div id="top-widgets">
+    <div class="widget"><div class="widget-label">Time</div><div class="widget-value" id="clock">--:--</div></div>
+    <div class="widget"><div class="widget-label" id="term-label">Term</div><div class="widget-value" id="term-value">--</div><div class="widget-sub" id="week-label">--</div></div>
+    <div class="widget"><div class="widget-label">Date</div><div class="widget-value" id="current-date">--</div></div>
+    <div class="widget"><div class="widget-label">Weather</div><div class="widget-value" id="w-temp">--°C</div><div class="widget-sub" id="w-cond">--</div></div>
+  </div>
+
+  <div id="view-container">
+    <div id="view-home" class="view active">
+      <div class="dash-grid">
+        <div>
+          <p style="color:var(--sub);margin:0 0 15px;font-weight:600;font-size:12px;text-transform:uppercase;">Overview</p>
+          <div class="avg-grid" id="avg-grid"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+          <div class="dash-card">
+            <h3>Next Deadline</h3>
+            <div id="dash-next-dl"></div>
+            <h3 style="margin-top:20px;">Pending Tasks</h3>
+            <div id="dash-tasks-container"></div>
+            <button class="btn-sec" style="margin-top:10px; font-size:11px; padding:8px;" onclick="show('calendar')">View All</button>
+          </div>
+          <div class="dash-card">
+            <h3>Focus Stats</h3>
+            <div class="focus-stat-big" id="dash-focus-total">0</div>
+            <div class="focus-stat-sub">Minutes Focused Today</div>
+            <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:11px; color:var(--sub); font-weight:700; text-transform:uppercase; letter-spacing:.5px;">
+              <span>This week: <span id="dash-focus-week" style="color:var(--secondary)">0m</span></span>
+              <span>Streak: <span id="dash-focus-streak" style="color:var(--deadline)">0 days</span></span>
+            </div>
+            <div class="focus-chart" id="dash-focus-chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-focus" class="view">
+      <div class="focus-container">
+        <div style="display:flex; gap:15px; margin-bottom:25px; align-items:center; flex-wrap:wrap; justify-content:center;">
+          <select id="focus-subj-input" style="padding:10px 15px; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); outline:none; font-weight:700; cursor:pointer;"><option value="">General Focus</option></select>
+          <div style="display:flex; align-items:center; gap:8px; padding:10px 15px; border-radius:12px; border:1px solid var(--border); background:var(--input-bg);">
+            <input type="number" id="focus-hours-input" value="0" min="0" max="8" style="width:35px; background:transparent; border:none; color:var(--text); font-size:14px; font-weight:800; text-align:right; outline:none;">
+            <span style="font-weight:700; color:var(--sub); font-size:11px;">HR</span>
+            <input type="number" id="focus-mins-input" value="25" min="0" max="59" style="width:35px; background:transparent; border:none; color:var(--text); font-size:14px; font-weight:800; text-align:right; outline:none;">
+            <span style="font-weight:700; color:var(--sub); font-size:11px;">MIN</span>
+          </div>
+        </div>
+
+        <div class="timer-ring" id="timer-ring">
+          <svg class="timer-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            <circle class="ring-track" cx="50" cy="50" r="44"></circle>
+            <circle class="ring-fill" cx="50" cy="50" r="44" id="ring-fill"></circle>
+          </svg>
+          <div class="timer-display" id="timer-display">25:00</div>
+        </div>
+
+        <div class="focus-controls">
+          <button class="btn" id="timer-start-btn" onclick="toggleTimer()">Start Focus</button>
+          <button class="btn-sec" onclick="resetTimer()">Reset</button>
+        </div>
+        <label class="strict-mode-toggle">
+          <input type="checkbox" id="strict-mode-cb" style="width:20px; height:20px; accent-color:var(--danger);">
+          <div class="strict-mode-info">
+            <span style="font-weight:700; font-size:14px; color:var(--danger)">Strict Mode</span>
+            <p>Leaving the tab pauses your timer and shows a warning overlay. Fullscreen is attempted when available.</p>
+          </div>
+        </label>
+      </div>
+
+      <div class="set-section" style="max-width:640px;margin:20px auto 0;">
+        <h3>Focus History</h3>
+        <div id="focus-extended">
+          <div class="dl-empty" style="padding:20px 0;">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-tt" class="view">
+      <div class="tt-container">
+        <div class="pdf-header">
+          <span class="desktop-only" style="font-weight:800;font-size:10px;text-transform:uppercase;color:var(--primary)"> Viewer</span>
+          <div class="pdf-ctrl-group desktop-only">
+            <button type="button" class="pdf-btn" onclick="pdfPrevPage()">&#8249;</button>
+            <span class="pdf-page-info" id="pdf-page-info">-- / --</span>
+            <button type="button" class="pdf-btn" onclick="pdfNextPage()">&#8250;</button>
+          </div>
+          <div class="pdf-ctrl-group">
+            <button type="button" class="pdf-btn" onclick="pdfZoom(-0.25)">&#8722;</button>
+            <span class="pdf-zoom-info" id="pdf-zoom-info">100%</span>
+            <button type="button" class="pdf-btn" onclick="pdfZoom(+0.25)">+</button>
+            <button type="button" class="pdf-btn desktop-only" onclick="pdfFitWidth()">Fit</button>
+          </div>
+          <a id="pdf-open" href="#" target="_blank" class="pdf-btn" style="background:var(--primary);color:#fff;text-decoration:none;border:none;display:flex;align-items:center;gap:5px;"><b>&#128279;</b> <span class="desktop-only">Open</span></a>
+        </div>
+        <div id="pdf-scroll"></div>
+      </div>
+    </div>
+
+    <div id="view-calendar" class="view">
+      <div class="calendar-view-layout">
+        <div class="calendar-main">
+          <div class="cal-header">
+            <button type="button" class="cal-nav-btn" onclick="calChangeMonth(-1)">&#8249; Prev</button>
+            <h3 id="cal-month-year">---</h3>
+            <button type="button" class="cal-nav-btn" onclick="calChangeMonth(1)">Next &#8250;</button>
+          </div>
+          <div class="cal-grid" id="cal-days-header"></div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div class="calendar-sidebar">
+          <h3 id="cal-selected-date-title">Today's Events</h3>
+          <div id="cal-event-list"></div>
+          <div class="ev-form">
+            <h4 style="margin:0 0 15px;font-size:14px;text-align:center;">Add Personal Event</h4>
+            <form onsubmit="event.preventDefault(); evAdd();" class="ev-form-grid">
+              <input id="ev-title-input" class="ev-input full-width" placeholder="Event Title" required>
+              <input id="ev-date-input" class="ev-input" type="date" required>
+              <input id="ev-start-input" class="ev-input" type="time" placeholder="Start time">
+              <input id="ev-end-input" class="ev-input" type="time" placeholder="End time">
+              <textarea id="ev-desc-input" class="ev-input full-width" rows="2" placeholder="Description (optional)"></textarea>
+              <select id="ev-recur-input" class="ev-input full-width">
+                <option value="">No repeat</option>
+                <option value="daily">Repeats daily</option>
+                <option value="weekly">Repeats weekly</option>
+                <option value="biweekly">Repeats every 2 weeks</option>
+                <option value="monthly">Repeats monthly</option>
+              </select>
+              <input id="ev-until-input" class="ev-input full-width" type="date" title="Repeat until (leave blank for no repeat)">
+              <button type="submit" class="ev-add-btn">+ Add to My Calendar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:0 0 30px 0;">
+      <h2 style="margin:0 0 18px;font-size:24px">Deadlines Manager</h2>
+      <form onsubmit="event.preventDefault(); dlAdd();" class="dl-toolbar">
+        <input id="dl-title-input" class="dl-input" placeholder="Task or assignment title" required>
+        <select id="dl-subj-input" class="dl-subj-select"><option value="">No subject</option></select>
+        <input id="dl-date-input" class="dl-date" type="date" required>
+        <select id="dl-recur-input" class="dl-subj-select" title="Repeat">
+          <option value="">No repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <input id="dl-until-input" class="dl-date" type="date" title="Repeat until">
+        <button type="submit" class="dl-add-btn">+ Add Task</button>
+      </form>
+
+      <div class="dl-toolbar" style="margin-bottom:15px;">
+        <input id="dl-search-input" class="dl-search" placeholder="🔍 Search tasks by title or subject…" oninput="dlSetSearch(this.value)">
+        <select id="dl-sort-input" class="dl-sort" onchange="dlSetSort(this.value)">
+          <option value="due">Sort: Due date ↑</option>
+          <option value="due-desc">Sort: Due date ↓</option>
+          <option value="title">Sort: Title A→Z</option>
+          <option value="subject">Sort: Subject A→Z</option>
+        </select>
+        <button type="button" class="btn-sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="exportICS()">📅 Export .ics</button>
+      </div>
+
+      <div class="dl-filters">
+        <button type="button" class="dl-filter-btn active" onclick="dlSetFilter('all',this)">All</button>
+        <button type="button" class="dl-filter-btn" onclick="dlSetFilter('pending',this)">Pending</button>
+        <button type="button" class="dl-filter-btn" onclick="dlSetFilter('overdue',this)">Overdue</button>
+        <button type="button" class="dl-filter-btn" onclick="dlSetFilter('done',this)">Done</button>
+        <span class="dl-count" id="dl-count"></span>
+      </div>
+      <div id="dl-list"></div>
+    </div>
+
+    <div id="view-grades" class="view">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <select id="examSelect" style="width:180px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text)" onchange="changeExam(this.value)">
+          <option value="WA1">WA1</option>
+          <option value="WA2">WA2</option>
+          <option value="WA3">WA3</option>
+          <option value="EOY">EOY</option>
+        </select>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="save-indicator" id="save-indicator"></span>
+          <button type="button" class="btn" id="saveBtn" style="width:auto;padding:10px 25px" onclick="save()">Save Grades</button>
+        </div>
+      </div>
+      <div id="grade-list"></div>
+    </div>
+
+    <div id="view-settings" class="view">
+      <h2 style="margin:0 0 20px;font-size:24px">Settings</h2>
+      <div class="settings-grid">
+        <div class="set-section">
+          <h3>Account Info</h3>
+          <form onsubmit="event.preventDefault(); saveProfile();">
+            <div class="set-input-group"><label>Display Name</label><input type="text" id="set-name-disp" class="set-input" required></div>
+            <div class="set-input-group"><label>Email Address (Cannot be changed)</label><input type="email" id="set-email-input" class="set-input" disabled style="opacity:0.6; cursor:not-allowed;"></div>
+            <div class="set-input-group">
+              <label>Current Password (required to change password)</label>
+              <input type="password" id="set-current-pass-input" class="set-input" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="set-input-group">
+              <label>New Password</label>
+              <input type="password" id="set-pass-input" class="set-input" placeholder="Leave blank to keep current" autocomplete="new-password">
+              <div id="pw-strength" class="pw-strength"></div>
+            </div>
+            <button type="submit" class="btn" id="save-profile-btn">Save Profile Changes</button>
+          </form>
+          <button type="button" class="btn-sec" style="margin-top:14px;" onclick="signOutOtherDevices()">🚪 Sign out of other devices</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:25px;">
+          <div class="set-section">
+            <h3>Reminders</h3>
+            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+              Get a browser notification when a deadline is due today or tomorrow.
+            </p>
+            <button type="button" class="btn-sec" onclick="requestNotificationPermission()">Enable deadline reminders</button>
+          </div>
+          <div class="set-section">
+            <h3>Academic Goals</h3>
+            <form onsubmit="event.preventDefault(); addGoal();">
+              <div class="set-input-group" style="display:flex; gap:10px;">
+                <input type="text" class="set-input" placeholder="e.g. A1 for Math" id="goal-input" required>
+                <button type="submit" class="btn" style="width:auto; padding:10px 15px;">Add</button>
+              </div>
+            </form>
+            <div id="goal-list"></div>
+          </div>
+          <div class="set-section">
+            <h3>Friends (Social)</h3>
+            <form onsubmit="event.preventDefault(); addFriend();">
+              <div class="set-input-group" style="display:flex; gap:10px;">
+                <input type="email" class="set-input" id="friend-email-input" placeholder="Friend's Email" required>
+                <button type="submit" class="btn" id="btn-add-friend" style="width:auto; padding:10px 15px;">Add</button>
+              </div>
+            </form>
+            <div id="friends-list">
+              <div class="dl-empty" style="padding:20px 0;">Add friends to see their status.</div>
+            </div>
+            <button type="button" class="btn-sec" style="margin-top:14px;" onclick="show('bugs')">🐛 Report a Bug</button>
+          </div>
+          <div class="set-section">
+            <h3>Data Export</h3>
+            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+              Download your grades, deadlines, events, and focus history as a personal record.
+            </p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportMyData('csv')">⬇ CSV</button>
+              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportMyData('json')">⬇ JSON</button>
+              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportICS()">📅 Calendar (.ics)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="set-section danger-zone" style="margin-top:25px;">
+        <h3>Danger Zone</h3>
+        <p class="danger-warning">Permanently delete your account and all associated data (grades, deadlines, events, friends, focus history). This cannot be undone.</p>
+        <form onsubmit="event.preventDefault(); confirmDeleteAccount();">
+          <div class="set-input-group">
+            <label>Confirm Password</label>
+            <input type="password" id="delete-pass-input" class="set-input" placeholder="Enter your password" required>
+          </div>
+          <button type="submit" class="btn-danger" id="delete-account-btn">Delete My Account</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="view-bugs" class="view">
+      <h2 style="margin:0 0 6px;font-size:24px">Report a Bug</h2>
+      <p class="bug-tip" style="max-width:540px;margin-bottom:22px">
+        Something broken, slow, or showing the wrong thing? Tell us what you were doing.
+      </p>
+      <div class="bug-grid">
+        <div class="set-section">
+          <h3>New report</h3>
+          <form onsubmit="event.preventDefault(); submitBug();">
+            <div class="set-input-group">
+              <label>What went wrong</label>
+              <input type="text" id="bug-title" class="set-input" maxlength="120" placeholder="Timetable will not load on my phone" required>
+            </div>
+            <div class="bug-row">
+              <div class="set-input-group">
+                <label>Type</label>
+                <select id="bug-category" class="set-input">
+                  <option value="bug">Something is broken</option>
+                  <option value="visual">Looks wrong</option>
+                  <option value="performance">Too slow</option>
+                  <option value="data">Shows the wrong information</option>
+                  <option value="feature">Idea for a feature</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="set-input-group">
+                <label>How bad</label>
+                <select id="bug-severity" class="set-input">
+                  <option value="low">Minor annoyance</option>
+                  <option value="medium" selected>Gets in the way</option>
+                  <option value="high">Cannot use the feature</option>
+                  <option value="critical">Lost my work</option>
+                </select>
+              </div>
+            </div>
+            <div class="set-input-group">
+              <label>Where it happened</label>
+              <select id="bug-page" class="set-input">
+                <option>Dashboard</option><option>Focus Mode</option><option>Timetable</option>
+                <option>Planner</option><option>Grades</option><option>Settings</option>
+                <option>Sign in</option><option>Somewhere else</option>
+              </select>
+            </div>
+            <div class="set-input-group">
+              <label>What happened</label>
+              <textarea id="bug-details" class="set-input" rows="6" maxlength="2000" placeholder="1. Opened the planner&#10;2. Tapped a task&#10;3. ..."></textarea>
+              <div class="bug-count" id="bug-count">0 / 2000</div>
+            </div>
+            <button type="submit" class="btn" id="bug-submit-btn">Send report</button>
+          </form>
+        </div>
+        <div class="set-section">
+          <h3>Your reports</h3>
+          <div id="bug-list"><div class="dl-empty" style="padding:30px 0;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="alert-overlay" class="hidden">
+      <div id="alert-box">
+        <p id="alert-message"></p>
+        <input id="alert-input" type="text">
+        <div id="alert-buttons">
+          <button id="alert-cancel-btn">Cancel</button>
+          <button id="alert-close-btn">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="focus-guard-overlay" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(2,6,23,0.97); flex-direction:column; align-items:center; justify-content:center; gap:20px; backdrop-filter:blur(10px);">
+  <div style="font-size:48px;">⚠️</div>
+  <h2 style="color:var(--danger); margin:0; font-size:24px;">Focus Broken!</h2>
+  <p style="color:var(--sub); margin:0; font-size:14px; text-align:center; max-width:300px;">You left during a focus session. Your timer has been paused.</p>
+  <button class="btn" style="width:auto; padding:12px 30px;" onclick="resumeFocusAfterGuard()">Resume Session</button>
+  <button class="btn-sec" style="width:auto; padding:12px 30px;" onclick="abandonFocus()">Abandon Session</button>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
