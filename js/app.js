@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.5
+   School Hub Pro - student client, v3.6
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -138,13 +138,30 @@ function updateThemeColorMeta() {
 }
 
 /* ============================================================
-   ACCENT COLOUR
+   ACCENT COLOUR — inline CSS variables on <html>
+   JS sets the vars directly so nothing depends on stylesheet
+   ordering or specificity. Inline styles always win.
    ============================================================ */
+const ACCENT_PRESETS = {
+  emerald: { primary: '#10b981', dark: '#059669', glow: 'rgba(16, 185, 129, 0.4)', dim: 'rgba(16, 185, 129, 0.12)' },
+  blue:    { primary: '#3b82f6', dark: '#2563eb', glow: 'rgba(59, 130, 246, 0.4)', dim: 'rgba(59, 130, 246, 0.12)' },
+  purple:  { primary: '#8b5cf6', dark: '#7c3aed', glow: 'rgba(139, 92, 246, 0.4)', dim: 'rgba(139, 92, 246, 0.12)' },
+  orange:  { primary: '#f59e0b', dark: '#d97706', glow: 'rgba(245, 158, 11, 0.4)', dim: 'rgba(245, 158, 11, 0.12)' },
+  pink:    { primary: '#ec4899', dark: '#db2777', glow: 'rgba(236, 72, 153, 0.4)', dim: 'rgba(236, 72, 153, 0.12)' }
+};
+
 function applyAccent(name) {
-  const valid = ['emerald', 'blue', 'purple', 'orange', 'pink'];
-  const safe = valid.indexOf(name) === -1 ? 'emerald' : name;
-  document.documentElement.setAttribute('data-accent', safe);
-  localStorage.setItem('shp_accent', safe);
+  const safeName = ACCENT_PRESETS[name] ? name : 'emerald';
+  const preset = ACCENT_PRESETS[safeName];
+  const root = document.documentElement;
+
+  root.setAttribute('data-accent', safeName);
+  root.style.setProperty('--primary', preset.primary);
+  root.style.setProperty('--primary-dark', preset.dark);
+  root.style.setProperty('--primary-glow', preset.glow);
+  root.style.setProperty('--primary-dim', preset.dim);
+
+  localStorage.setItem('shp_accent', safeName);
   updateAccentSwatchSelection();
 }
 function initAccent() {
@@ -222,7 +239,6 @@ window.onload = () => {
     if (navMap[e.key]) show(navMap[e.key]);
   });
 
-  // --- Auto-refresh when the tab becomes visible again ---
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
     if (!document.body.getAttribute('data-logged-in')) return;
@@ -1592,7 +1608,7 @@ setInterval(() => {
       try {
         new Notification('School Hub Pro — Upcoming Deadline', {
           body: `${item.title}${item.subject ? ' (' + item.subject + ')' : ''} — ${days === 0 ? 'due today' : 'due tomorrow'}`,
-          icon: 'https://i.postimg.cc/LhKBst4H/Screenshot-2026-06-30-104638.png'
+          icon: 'favicon.png'
         });
       } catch (e) {}
     }
