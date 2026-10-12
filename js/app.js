@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.8
+   School Hub Pro - student client, v3.9
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -85,7 +85,39 @@ document.addEventListener('DOMContentLoaded', function() {
   window.prompt = function(msg, def) { shpPrompt(msg, def); return null; };
 });
 
-function toast(message, type = 'info', duration = 3000) {
+/* ============================================================
+   TOAST — supports an optional action button (e.g. Undo)
+   ============================================================ */
+function ensureToastActionStyles() {
+  if (document.getElementById('toast-action-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'toast-action-styles';
+  style.textContent = `
+    .toast-action {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      color: inherit;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: 6px;
+      flex-shrink: 0;
+      transition: background-color .15s, border-color .15s;
+    }
+    .toast-action:hover { background: rgba(255,255,255,.28); border-color: rgba(255,255,255,.4); }
+    .toast-action:active { background: rgba(255,255,255,.4); }
+    [data-theme="light"] .toast-action { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.15); }
+    [data-theme="light"] .toast-action:hover { background: rgba(0,0,0,.12); border-color: rgba(0,0,0,.25); }
+    [data-theme="light"] .toast-action:active { background: rgba(0,0,0,.2); }
+  `;
+  document.head.appendChild(style);
+}
+
+function toast(message, type = 'info', duration = 3000, action = null) {
+  ensureToastActionStyles();
   const container = document.getElementById('toast-container');
   if (!container) { window.alert(message); return; }
   const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
@@ -99,18 +131,35 @@ function toast(message, type = 'info', duration = 3000) {
   msg.textContent = String(message == null ? '' : message);
   el.appendChild(icon);
   el.appendChild(msg);
-  container.appendChild(el);
-  setTimeout(() => {
+
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
     el.classList.add('leaving');
     setTimeout(() => el.remove(), 300);
-  }, duration);
+  };
+
+  if (action && typeof action.onClick === 'function') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast-action';
+    btn.textContent = action.label || 'Undo';
+    btn.addEventListener('click', () => {
+      dismiss();
+      action.onClick();
+    });
+    el.appendChild(btn);
+    // Give the user a bit more time when there's an action to take
+    if (duration < 5000) duration = 5000;
+  }
+
+  container.appendChild(el);
+  setTimeout(dismiss, duration);
 }
 
 /* ============================================================
    OFFLINE PAGE
-   Full-screen notice shown only when the app is opened with no
-   connection (cold start offline). If connection drops mid-session,
-   the online/offline listeners in window.onload show a toast instead.
    ============================================================ */
 let offlinePageShown = false;
 
@@ -229,7 +278,6 @@ function showOfflinePage() {
     label.textContent = 'Checking connection…';
     statusEl.textContent = '';
 
-    // Race a cache-busted fetch against a 4-second timeout.
     const timeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('timeout')), 4000)
     );
@@ -257,6 +305,186 @@ function hideOfflinePage() {
   offlinePageShown = false;
   const page = document.getElementById('offline-page');
   if (page) page.remove();
+}
+
+/* ============================================================
+   PULL-TO-REFRESH (mobile only)
+   ============================================================ */
+let ptrStartY = 0;
+let ptrPull = 0;
+let ptrActive = false;
+let ptrRefreshing = false;
+const PTR_THRESHOLD = 70;
+const PTR_MAX = 120;
+
+function setupPullToRefresh() {
+  if (!('ontouchstart' in window)) return;
+  const main = document.getElementById('main');
+  if (!main) return;
+
+  const indicator = document.createElement('div');
+  indicator.id = 'ptr-indicator';
+  indicator.innerHTML = '<div class="ptr-spinner"></div>';
+  document.body.appendChild(indicator);
+
+  if (!document.getElementById('ptr-styles')) {
+    const style = document.createElement('style');
+    style.id = 'ptr-styles';
+    style.textContent = `
+      #ptr-indicator {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 99997;
+        transition: height .2s ease, opacity .2s ease;
+        opacity: 0;
+      }
+      #ptr-indicator.visible { opacity: 1; }
+      #ptr-indicator .ptr-spinner {
+        width: 28px; height: 28px;
+        border: 3px solid rgba(128,128,128,.25);
+        border-top-color: #10b981;
+        border-radius: 50%;
+        transform: rotate(0deg);
+        transition: transform .15s ease;
+      }
+      #ptr-indicator.refreshing .ptr-spinner {
+        animation: ptrSpin .8s linear infinite;
+      }
+      @keyframes ptrSpin { to { transform: rotate(360deg); } }
+      @media (max-width: 768px) {
+        #main { overscroll-behavior-y: contain; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const spinner = indicator.querySelector('.ptr-spinner');
+
+  main.addEventListener('touchstart', e => {
+    if (!document.body.getAttribute('data-logged-in')) return;
+    if (ptrRefreshing) return;
+    if (main.scrollTop > 0) return;
+    if (offlinePageShown) return;
+    ptrStartY = e.touches[0].clientY;
+    ptrPull = 0;
+    ptrActive = true;
+  }, { passive: true });
+
+  main.addEventListener('touchmove', e => {
+    if (!ptrActive) return;
+    const dy = e.touches[0].clientY - ptrStartY;
+    if (dy <= 0 || main.scrollTop > 0) {
+      ptrPull = 0;
+      indicator.classList.remove('visible');
+      indicator.style.height = '0px';
+      spinner.style.transform = 'rotate(0deg)';
+      if (main.scrollTop > 0) ptrActive = false;
+      return;
+    }
+    ptrPull = Math.min(dy * 0.5, PTR_MAX);
+    indicator.classList.add('visible');
+    indicator.style.height = ptrPull + 'px';
+    const deg = (ptrPull / PTR_THRESHOLD) * 360;
+    spinner.style.transform = 'rotate(' + deg + 'deg)';
+  }, { passive: true });
+
+  main.addEventListener('touchend', () => {
+    if (!ptrActive) return;
+    ptrActive = false;
+    if (ptrPull >= PTR_THRESHOLD) {
+      triggerPullRefresh(indicator, spinner);
+    } else {
+      indicator.classList.remove('visible');
+      indicator.style.height = '0px';
+      spinner.style.transform = 'rotate(0deg)';
+    }
+    ptrPull = 0;
+  });
+
+  main.addEventListener('touchcancel', () => {
+    ptrActive = false;
+    ptrPull = 0;
+    indicator.classList.remove('visible');
+    indicator.style.height = '0px';
+  });
+}
+
+function triggerPullRefresh(indicator, spinner) {
+  ptrRefreshing = true;
+  indicator.classList.add('refreshing');
+  indicator.style.height = '50px';
+
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    setTimeout(() => {
+      indicator.classList.remove('refreshing', 'visible');
+      indicator.style.height = '0px';
+      spinner.style.transform = 'rotate(0deg)';
+      ptrRefreshing = false;
+    }, 300);
+  };
+
+  if (!state.email || !sessionToken) { finish(); return; }
+
+  const norm = dt => {
+    if (!dt) return todayStr();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(dt))) return String(dt);
+    const p = new Date(dt);
+    return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}-${String(p.getDate()).padStart(2, '0')}`;
+  };
+
+  let pending = 2;
+  const check = () => { pending--; if (pending <= 0) finish(); };
+
+  google.script.run
+    .withSuccessHandler(items => {
+      if (Array.isArray(items)) {
+        dlItems = items.map(i => ({ ...i, date: norm(i.date) }));
+        renderNextDeadline();
+        renderDashboardTasks();
+        if (document.body.getAttribute('data-view') === 'calendar') {
+          dlRender();
+          calRenderMonth();
+        }
+      }
+      check();
+    })
+    .withFailureHandler(() => check())
+    .loadDeadlines(state.email, sessionToken);
+
+  google.script.run
+    .withSuccessHandler(() => { loadFocusExtended(); check(); })
+    .withFailureHandler(() => check())
+    .getFocusHistoryExtended(state.email, sessionToken);
+}
+
+/* ============================================================
+   ANDROID BACK BUTTON / BROWSER HISTORY
+   ============================================================ */
+let historyReady = false;
+
+function ensureHistoryInitialized() {
+  if (historyReady) return;
+  history.replaceState({ view: 'home' }, '', location.pathname + location.search);
+  historyReady = true;
+}
+
+function initHistoryNavigation() {
+  window.addEventListener('popstate', e => {
+    // If the user isn't logged in, let the browser handle back natively
+    // (it will close the PWA or go back to the previous page).
+    if (!document.body.getAttribute('data-logged-in')) return;
+    const view = (e.state && e.state.view) || 'home';
+    show(view, { fromPop: true });
+  });
 }
 
 /* ============================================================
@@ -291,7 +519,7 @@ function updateThemeColorMeta() {
 }
 
 /* ============================================================
-   ACCENT COLOUR — inline CSS variables on <html>
+   ACCENT COLOUR
    ============================================================ */
 const ACCENT_PRESETS = {
   emerald: { primary: '#10b981', dark: '#059669', glow: 'rgba(16, 185, 129, 0.4)', dim: 'rgba(16, 185, 129, 0.12)' },
@@ -360,6 +588,8 @@ window.onload = () => {
   initAccent();
   wireAccentSwatches();
   registerServiceWorker();
+  initHistoryNavigation();
+  setupPullToRefresh();
 
   const superOld = localStorage.getItem('shp_user_email_v4');
   if (superOld) localStorage.removeItem('shp_user_email_v4');
@@ -382,9 +612,6 @@ window.onload = () => {
 
   window.addEventListener('offline', () => {
     updateOffline();
-    // If the full-screen page is up, it means we never had a connection —
-    // leave it there. Otherwise the user is already inside the app, so a
-    // quiet toast is enough; they'll see errors only when actions fail.
     if (!offlinePageShown) {
       toast('You are offline — changes will not save', 'warning', 3500);
     }
@@ -392,8 +619,6 @@ window.onload = () => {
 
   updateOffline();
 
-  // Cold start with no connection: show the full-screen page.
-  // Mid-session connection loss is handled by the 'offline' listener above.
   if (!navigator.onLine) showOfflinePage();
 
   document.addEventListener('keydown', e => {
@@ -633,6 +858,9 @@ async function logout() {
 
   document.body.removeAttribute('data-logged-in');
   document.body.removeAttribute('data-view');
+  historyReady = false;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+
   const savedAuth = JSON.parse(localStorage.getItem('shp_auth_v5') || "null");
   if (savedAuth && savedAuth.email) {
     document.getElementById('auth-saved').style.display = 'block';
@@ -875,6 +1103,7 @@ function load() {
 
     document.getElementById('portal').style.display = 'none';
     document.body.setAttribute('data-logged-in', 'true');
+    historyReady = false;
     show('home');
     lastRefreshAt = Date.now();
 
@@ -918,7 +1147,8 @@ function load() {
   }).loadAppData(state.email, sessionToken);
 }
 
-function show(v) {
+function show(v, opts) {
+  opts = opts || {};
   document.querySelectorAll('.view, .nav-item, .mob-nav-item').forEach(x => x.classList.remove('active'));
   const viewEl = document.getElementById('view-' + v);
   if (viewEl) viewEl.classList.add('active');
@@ -928,6 +1158,15 @@ function show(v) {
   if (v === 'focus') loadFocusExtended();
   if (v !== 'bugs' && BUG_PAGE_BY_VIEW[v]) lastAppView = v;
   if (v === 'bugs') openBugView();
+
+  // History management for the Android back button
+  if (!opts.fromPop && document.body.getAttribute('data-logged-in')) {
+    ensureHistoryInitialized();
+    const cur = history.state;
+    if (!cur || cur.view !== v) {
+      history.pushState({ view: v }, '', '#' + v);
+    }
+  }
 }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
@@ -1022,7 +1261,7 @@ function loadFocusExtended() {
 }
 
 /* ============================================================
-   FOCUS TIMER — plain timer, no strict mode
+   FOCUS TIMER
    ============================================================ */
 let focusTimeLeft = 1500, focusInterval = null, isFocusing = false, focusInitialMins = 25;
 let focusSubjectForSession = '';
@@ -1600,11 +1839,21 @@ function evAdd() {
   toast(dates.length > 1 ? ('Added ' + dates.length + ' events') : 'Event added', 'success', 1800);
 }
 async function evDelete(id) {
+  const ev = calAllEvents.find(x => x.id === id);
+  if (!ev) return;
   const yes = await shpConfirm('Delete this event?');
   if (!yes) return;
-  calAllEvents = calAllEvents.filter(x => x.id !== id);
+  const idx = calAllEvents.findIndex(x => x.id === id);
+  const removed = calAllEvents.splice(idx, 1)[0];
   evPush(); calRenderMonth();
-  toast("Event deleted", "info", 1500);
+  toast('Event deleted', 'info', 5000, {
+    label: 'Undo',
+    onClick: () => {
+      calAllEvents.splice(idx, 0, removed);
+      evPush(); calRenderMonth();
+      toast('Event restored', 'success', 1500);
+    }
+  });
 }
 async function evDuplicate(id) {
   const ev = calAllEvents.find(x => x.id === id);
@@ -1695,11 +1944,21 @@ function dlAdd() {
 }
 function dlToggle(id) { const item = dlItems.find(x => x.id === id); if (item) item.done = !item.done; dlPush(); dlRender(); calRenderMonth(); renderNextDeadline(); }
 async function dlDelete(id) {
+  const item = dlItems.find(x => x.id === id);
+  if (!item) return;
   const yes = await shpConfirm('Delete this task?');
   if (!yes) return;
-  dlItems = dlItems.filter(x => x.id !== id);
+  const idx = dlItems.findIndex(x => x.id === id);
+  const removed = dlItems.splice(idx, 1)[0];
   dlPush(); dlRender(); calRenderMonth(); renderNextDeadline();
-  toast("Task deleted", "info", 1500);
+  toast('Task deleted', 'info', 5000, {
+    label: 'Undo',
+    onClick: () => {
+      dlItems.splice(idx, 0, removed);
+      dlPush(); dlRender(); calRenderMonth(); renderNextDeadline();
+      toast('Task restored', 'success', 1500);
+    }
+  });
 }
 function dlSetFilter(f, el) {
   dlFilter = f;
