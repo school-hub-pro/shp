@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.7
+   School Hub Pro - student client, v3.8
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -108,7 +108,9 @@ function toast(message, type = 'info', duration = 3000) {
 
 /* ============================================================
    OFFLINE PAGE
-   Full-screen notice shown when the browser has no connection.
+   Full-screen notice shown only when the app is opened with no
+   connection (cold start offline). If connection drops mid-session,
+   the online/offline listeners in window.onload show a toast instead.
    ============================================================ */
 let offlinePageShown = false;
 
@@ -131,7 +133,11 @@ function showOfflinePage() {
         '<li>Airplane mode is turned off</li>' +
         '<li>Your internet service provider is working</li>' +
       '</ul>' +
-      '<button type="button" id="offline-retry">Try Again</button>' +
+      '<button type="button" id="offline-retry">' +
+        '<span class="offline-btn-spinner" aria-hidden="true"></span>' +
+        '<span class="offline-btn-label">Try Again</span>' +
+      '</button>' +
+      '<p class="offline-status" id="offline-status"></p>' +
     '</div>';
 
   if (!document.getElementById('offline-page-styles')) {
@@ -172,15 +178,32 @@ function showOfflinePage() {
       }
       .offline-card li { margin-bottom: 2px; }
       #offline-retry {
+        position: relative;
         width: 100%; padding: 13px;
         border-radius: 12px; border: none;
         background: #10b981; color: #fff;
         font-family: inherit; font-size: 14px; font-weight: 700;
         cursor: pointer;
-        transition: background-color .2s, transform .15s;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        transition: background-color .2s, transform .15s, opacity .2s;
       }
-      #offline-retry:hover { background: #059669; transform: translateY(-2px); }
-      #offline-retry:active { transform: translateY(0); }
+      #offline-retry:hover:not(:disabled) { background: #059669; transform: translateY(-2px); }
+      #offline-retry:active:not(:disabled) { transform: translateY(0); }
+      #offline-retry:disabled { cursor: not-allowed; opacity: .75; transform: none; }
+      .offline-btn-spinner {
+        display: none;
+        width: 16px; height: 16px;
+        border: 2px solid rgba(255, 255, 255, .35);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: offlineSpin .8s linear infinite;
+      }
+      #offline-retry.loading .offline-btn-spinner { display: block; }
+      @keyframes offlineSpin { to { transform: rotate(360deg); } }
+      .offline-status {
+        margin: 14px 0 0; font-size: 12px; color: #f59e0b;
+        min-height: 16px; font-weight: 600;
+      }
       [data-theme="light"] .offline-card {
         background: rgba(255, 255, 255, .95);
         border-color: rgba(0, 0, 0, .1);
@@ -188,21 +211,45 @@ function showOfflinePage() {
       }
       [data-theme="light"] .offline-card p { color: #475569; }
       [data-theme="light"] .offline-card ul { color: #334155; }
+      [data-theme="light"] .offline-status { color: #d97706; }
     `;
     document.head.appendChild(style);
   }
 
   document.body.appendChild(page);
-  document.getElementById('offline-retry').addEventListener('click', () => {
-    if (navigator.onLine) {
-      hideOfflinePage();
-      location.reload();
-    } else {
-      const icon = page.querySelector('.offline-icon');
-      icon.style.transition = 'transform .2s';
-      icon.style.transform = 'scale(1.2)';
-      setTimeout(() => { icon.style.transform = 'scale(1)'; }, 200);
-    }
+
+  const retryBtn = document.getElementById('offline-retry');
+  const label = retryBtn.querySelector('.offline-btn-label');
+  const statusEl = document.getElementById('offline-status');
+
+  retryBtn.addEventListener('click', () => {
+    if (retryBtn.disabled) return;
+    retryBtn.disabled = true;
+    retryBtn.classList.add('loading');
+    label.textContent = 'Checking connection…';
+    statusEl.textContent = '';
+
+    // Race a cache-busted fetch against a 4-second timeout.
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 4000)
+    );
+    const check = fetch('./manifest.json?t=' + Date.now(), {
+      method: 'GET',
+      cache: 'no-store'
+    });
+
+    Promise.race([check, timeout])
+      .then(() => {
+        label.textContent = 'Connected — reloading…';
+        setTimeout(() => location.reload(), 400);
+      })
+      .catch(() => {
+        retryBtn.disabled = false;
+        retryBtn.classList.remove('loading');
+        label.textContent = 'Try Again';
+        statusEl.textContent = 'Still offline — please check your connection.';
+        setTimeout(() => { if (!retryBtn.disabled) statusEl.textContent = ''; }, 4000);
+      });
   });
 }
 
@@ -326,16 +373,27 @@ window.onload = () => {
   }
 
   const updateOffline = () => document.body.classList.toggle('offline', !navigator.onLine);
+
   window.addEventListener('online', () => {
     updateOffline();
     hideOfflinePage();
     toast('Back online', 'success', 1500);
   });
+
   window.addEventListener('offline', () => {
     updateOffline();
-    showOfflinePage();
+    // If the full-screen page is up, it means we never had a connection —
+    // leave it there. Otherwise the user is already inside the app, so a
+    // quiet toast is enough; they'll see errors only when actions fail.
+    if (!offlinePageShown) {
+      toast('You are offline — changes will not save', 'warning', 3500);
+    }
   });
+
   updateOffline();
+
+  // Cold start with no connection: show the full-screen page.
+  // Mid-session connection loss is handled by the 'offline' listener above.
   if (!navigator.onLine) showOfflinePage();
 
   document.addEventListener('keydown', e => {
@@ -404,6 +462,8 @@ function silentRefresh() {
       dlRender();
       calRenderMonth();
     }
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
   }).loadDeadlines(state.email, sessionToken);
 }
 
