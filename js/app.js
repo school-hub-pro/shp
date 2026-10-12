@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.6
+   School Hub Pro - student client, v3.7
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -107,6 +107,112 @@ function toast(message, type = 'info', duration = 3000) {
 }
 
 /* ============================================================
+   OFFLINE PAGE
+   Full-screen notice shown when the browser has no connection.
+   ============================================================ */
+let offlinePageShown = false;
+
+function showOfflinePage() {
+  if (offlinePageShown) return;
+  offlinePageShown = true;
+
+  const existing = document.getElementById('offline-page');
+  if (existing) { existing.style.display = 'flex'; return; }
+
+  const page = document.createElement('div');
+  page.id = 'offline-page';
+  page.innerHTML =
+    '<div class="offline-card">' +
+      '<div class="offline-icon">📡</div>' +
+      '<h2>No Internet Connection</h2>' +
+      '<p>School Hub Pro cannot reach the server. Please check that:</p>' +
+      '<ul>' +
+        '<li>Your device is connected to Wi-Fi or mobile data</li>' +
+        '<li>Airplane mode is turned off</li>' +
+        '<li>Your internet service provider is working</li>' +
+      '</ul>' +
+      '<button type="button" id="offline-retry">Try Again</button>' +
+    '</div>';
+
+  if (!document.getElementById('offline-page-styles')) {
+    const style = document.createElement('style');
+    style.id = 'offline-page-styles';
+    style.textContent = `
+      #offline-page {
+        position: fixed; inset: 0; z-index: 100000;
+        background: linear-gradient(-45deg, #0f172a, #1e1b4b, #064e3b, #020617);
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px; backdrop-filter: blur(12px);
+        animation: offlineIn .3s ease;
+      }
+      @keyframes offlineIn { from { opacity: 0; } to { opacity: 1; } }
+      .offline-card {
+        background: rgba(30, 41, 59, .85);
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 24px;
+        padding: 36px 28px;
+        max-width: 400px; width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+        backdrop-filter: blur(20px);
+        color: #f8fafc;
+        font-family: 'Inter', sans-serif;
+      }
+      .offline-icon { font-size: 56px; line-height: 1; margin-bottom: 18px; }
+      .offline-card h2 {
+        margin: 0 0 12px; font-size: 22px; font-weight: 800;
+        color: #ef4444; letter-spacing: -.2px;
+      }
+      .offline-card p {
+        margin: 0 0 16px; font-size: 13px; line-height: 1.6; color: #94a3b8;
+      }
+      .offline-card ul {
+        text-align: left; margin: 0 auto 22px; padding-left: 22px;
+        font-size: 13px; line-height: 1.8; color: #cbd5e1;
+      }
+      .offline-card li { margin-bottom: 2px; }
+      #offline-retry {
+        width: 100%; padding: 13px;
+        border-radius: 12px; border: none;
+        background: #10b981; color: #fff;
+        font-family: inherit; font-size: 14px; font-weight: 700;
+        cursor: pointer;
+        transition: background-color .2s, transform .15s;
+      }
+      #offline-retry:hover { background: #059669; transform: translateY(-2px); }
+      #offline-retry:active { transform: translateY(0); }
+      [data-theme="light"] .offline-card {
+        background: rgba(255, 255, 255, .95);
+        border-color: rgba(0, 0, 0, .1);
+        color: #0f172a;
+      }
+      [data-theme="light"] .offline-card p { color: #475569; }
+      [data-theme="light"] .offline-card ul { color: #334155; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(page);
+  document.getElementById('offline-retry').addEventListener('click', () => {
+    if (navigator.onLine) {
+      hideOfflinePage();
+      location.reload();
+    } else {
+      const icon = page.querySelector('.offline-icon');
+      icon.style.transition = 'transform .2s';
+      icon.style.transform = 'scale(1.2)';
+      setTimeout(() => { icon.style.transform = 'scale(1)'; }, 200);
+    }
+  });
+}
+
+function hideOfflinePage() {
+  offlinePageShown = false;
+  const page = document.getElementById('offline-page');
+  if (page) page.remove();
+}
+
+/* ============================================================
    THEME
    ============================================================ */
 function applyTheme(theme) {
@@ -139,8 +245,6 @@ function updateThemeColorMeta() {
 
 /* ============================================================
    ACCENT COLOUR — inline CSS variables on <html>
-   JS sets the vars directly so nothing depends on stylesheet
-   ordering or specificity. Inline styles always win.
    ============================================================ */
 const ACCENT_PRESETS = {
   emerald: { primary: '#10b981', dark: '#059669', glow: 'rgba(16, 185, 129, 0.4)', dim: 'rgba(16, 185, 129, 0.12)' },
@@ -222,9 +326,17 @@ window.onload = () => {
   }
 
   const updateOffline = () => document.body.classList.toggle('offline', !navigator.onLine);
-  window.addEventListener('online', () => { updateOffline(); toast('Back online', 'success', 1500); });
-  window.addEventListener('offline', () => { updateOffline(); toast('You are offline', 'warning', 3000); });
+  window.addEventListener('online', () => {
+    updateOffline();
+    hideOfflinePage();
+    toast('Back online', 'success', 1500);
+  });
+  window.addEventListener('offline', () => {
+    updateOffline();
+    showOfflinePage();
+  });
   updateOffline();
+  if (!navigator.onLine) showOfflinePage();
 
   document.addEventListener('keydown', e => {
     const tag = (e.target.tagName || '').toLowerCase();
@@ -379,6 +491,10 @@ function login() {
     sessionToken = res.token;
     state.email = res.email; state.name = res.name;
     load();
+  }).withFailureHandler(err => {
+    document.getElementById('portal').style.display = 'none';
+    if (err && err.message === 'OFFLINE') return;
+    document.getElementById('err').innerText = 'Could not reach the server. Try again.';
   }).authUser(e, p, state.authMode, n, e);
 }
 function submitLinkEmail() {
@@ -395,6 +511,10 @@ function submitLinkEmail() {
       document.getElementById('portal').style.display = 'none';
       errEl.innerText = res.msg;
     }
+  }).withFailureHandler(err => {
+    document.getElementById('portal').style.display = 'none';
+    if (err && err.message === 'OFFLINE') return;
+    errEl.innerText = 'Could not reach the server. Try again.';
   }).attachEmailAndMigrate(tempMigrationUsername, newEmail, tempMigrationToken);
 }
 function requestOTP() {
@@ -407,6 +527,11 @@ function requestOTP() {
     btn.disabled = false;
     if (res.success) { errEl.innerText = ''; showAuthView('reset'); document.getElementById('otp-input').focus(); }
     else { errEl.style.color = '#f43f5e'; errEl.innerText = res.msg; }
+  }).withFailureHandler(err => {
+    btn.disabled = false;
+    if (err && err.message === 'OFFLINE') return;
+    errEl.style.color = '#f43f5e';
+    errEl.innerText = 'Could not reach the server. Try again.';
   }).requestOTP(email);
 }
 function submitNewPassword() {
@@ -428,6 +553,11 @@ function submitNewPassword() {
         document.getElementById('pass').focus();
       }, 2000);
     } else { errEl.style.color = '#f43f5e'; errEl.innerText = res.msg; }
+  }).withFailureHandler(err => {
+    btn.disabled = false;
+    if (err && err.message === 'OFFLINE') return;
+    errEl.style.color = '#f43f5e';
+    errEl.innerText = 'Could not reach the server. Try again.';
   }).resetPasswordWithOTP(resetEmailMemory, otp, newPass);
 }
 async function logout() {
@@ -475,7 +605,10 @@ async function signOutOtherDevices() {
     } else {
       toast((res && res.msg) || 'Failed', 'error');
     }
-  }).withFailureHandler(() => toast('Network error', 'error')).logLogoutOtherDevices(state.email, sessionToken);
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
+    toast('Network error', 'error');
+  }).logLogoutOtherDevices(state.email, sessionToken);
 }
 
 /* ============================================================
@@ -505,6 +638,10 @@ function saveProfile() {
       localStorage.setItem('shp_auth_v5', JSON.stringify(savedAuth));
       document.getElementById('saved-greeting').innerText = 'WELCOME BACK, ' + state.name.toUpperCase();
     } else { toast("Error: " + res.msg, "error"); }
+  }).withFailureHandler(err => {
+    btn.innerText = "Save Profile Changes";
+    if (err && err.message === 'OFFLINE') return;
+    toast('Could not reach the server.', 'error');
   }).updateProfile(state.email, newName, newPass, currentPass, sessionToken);
 }
 async function confirmDeleteAccount() {
@@ -521,6 +658,10 @@ async function confirmDeleteAccount() {
       localStorage.removeItem('shp_auth_v5');
       window.location.reload();
     } else { toast('Error: ' + res.msg, 'error'); document.getElementById('delete-pass-input').value = ''; }
+  }).withFailureHandler(err => {
+    btn.disabled = false; btn.innerText = 'Delete My Account';
+    if (err && err.message === 'OFFLINE') return;
+    toast('Could not reach the server.', 'error');
   }).deleteUser(state.email, pass, sessionToken);
 }
 
@@ -533,6 +674,8 @@ function loadFriendsList() {
     pendingIncoming = res.pendingIncoming || [];
     pendingOutgoing = res.pendingOutgoing || [];
     renderFriendsList();
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
   }).loadFriends(state.email, sessionToken);
 }
 function renderFriendsList() {
@@ -623,12 +766,19 @@ function addFriend() {
     input.value = '';
     toast(res.msg, res.success ? 'success' : 'error');
     if (res.success) loadFriendsList();
+  }).withFailureHandler(err => {
+    input.disabled = false; btn.disabled = false;
+    if (err && err.message === 'OFFLINE') return;
+    toast('Could not reach the server.', 'error');
   }).addFriend(state.email, friendEmail, sessionToken);
 }
 function acceptFriend(friendEmail) {
   google.script.run.withSuccessHandler(res => {
     if (res.success) loadFriendsList();
     else toast("Error: " + res.msg, "error");
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
+    toast('Could not reach the server.', 'error');
   }).acceptFriendRequest(state.email, friendEmail, sessionToken);
 }
 async function removeFriend(friendEmail, isReject = false) {
@@ -638,6 +788,9 @@ async function removeFriend(friendEmail, isReject = false) {
   google.script.run.withSuccessHandler(res => {
     if (res.success) loadFriendsList();
     else toast("Error: " + res.msg, "error");
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
+    toast('Could not reach the server.', 'error');
   }).removeFriend(state.email, friendEmail, sessionToken);
 }
 
@@ -691,12 +844,16 @@ function load() {
         if (t && w.temp) t.innerText = w.temp;
         if (c && w.cond) c.innerText = w.cond;
       })
-      .withFailureHandler(err => console.error('weather call failed:', err))
+      .withFailureHandler(err => {
+        if (err && err.message === 'OFFLINE') return;
+        console.error('weather call failed:', err);
+      })
       .getQuickWeather();
   }).withFailureHandler(err => {
     console.error('loadAppData failed:', err);
     document.getElementById('portal').style.display = 'none';
     document.body.removeAttribute('data-logged-in');
+    if (err && err.message === 'OFFLINE') return;
     document.getElementById('err').innerText = 'Failed to load data. Try again.';
   }).loadAppData(state.email, sessionToken);
 }
@@ -798,7 +955,8 @@ function loadFocusExtended() {
     });
     grid.appendChild(subCol); grid.appendChild(monCol);
     wrap.appendChild(grid);
-  }).withFailureHandler(() => {
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
     wrap.innerHTML = '<div class="dl-empty" style="padding:24px 0;">Failed to load focus history.</div>';
   }).getFocusHistoryExtended(state.email, sessionToken);
 }
@@ -881,6 +1039,10 @@ function persistFocusSession(subject, minutes) {
       state.focusMinutesWeek += minutes;
       renderFocusStats();
     }
+  }).withFailureHandler(() => {
+    state.focusMinutesToday += minutes;
+    state.focusMinutesWeek += minutes;
+    renderFocusStats();
   }).saveFocusSession(state.email, subject, minutes, sessionToken);
 }
 function resetTimer() {
@@ -971,6 +1133,7 @@ function initPdfViewer(fileId) {
       }
     })
     .withFailureHandler(err => {
+      if (err && err.message === 'OFFLINE') return;
       console.error('[pdf] google.script.run failed:', err);
       pdfShowFallback(container, fileId, 'rpc', err && err.message);
     })
@@ -1180,6 +1343,10 @@ function save() {
     b.innerText = 'Save Grades';
     setSaveIndicator(ok);
     toast(ok ? 'Grades saved' : 'Save failed', ok ? 'success' : 'error');
+  }).withFailureHandler(err => {
+    b.innerText = 'Save Grades';
+    if (err && err.message === 'OFFLINE') return;
+    toast('Save failed', 'error');
   }).saveData(state.email, state.exam, state.grades[state.exam], sessionToken);
 }
 let autoSaveTimer = null;
@@ -1245,9 +1412,9 @@ function calInit() {
   daysHeader.innerHTML = '';
   ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => { daysHeader.innerHTML += `<div class="cal-day-head">${day}</div>`; });
   Promise.all([
-    new Promise(res => google.script.run.withSuccessHandler(res).loadEvents(state.email, sessionToken)),
-    new Promise(res => google.script.run.withSuccessHandler(res).getGoogleCalendarEvents(state.email, sessionToken)),
-    new Promise(res => google.script.run.withSuccessHandler(res).loadDeadlines(state.email, sessionToken))
+    new Promise(res => google.script.run.withSuccessHandler(res).withFailureHandler(() => res([])).loadEvents(state.email, sessionToken)),
+    new Promise(res => google.script.run.withSuccessHandler(res).withFailureHandler(() => res([])).getGoogleCalendarEvents(state.email, sessionToken)),
+    new Promise(res => google.script.run.withSuccessHandler(res).withFailureHandler(() => res([])).loadDeadlines(state.email, sessionToken))
   ]).then(([p, s, d]) => {
     const norm = (dt) => {
       if (!dt) return todayStr();
@@ -1343,7 +1510,7 @@ function calRenderEventList() {
     container.appendChild(el);
   });
 }
-function evPush() { google.script.run.saveEvents(state.email, calAllEvents.filter(e => e.type === 'personal'), sessionToken); }
+function evPush() { google.script.run.withFailureHandler(() => {}).saveEvents(state.email, calAllEvents.filter(e => e.type === 'personal'), sessionToken); }
 function evAdd() {
   const title = document.getElementById('ev-title-input').value.trim();
   if (!title) return;
@@ -1389,7 +1556,7 @@ async function evDuplicate(id) {
   evPush(); calRenderMonth();
   toast("Event duplicated", "success", 1500);
 }
-function dlPush() { google.script.run.saveDeadlines(state.email, dlItems, sessionToken); }
+function dlPush() { google.script.run.withFailureHandler(() => {}).saveDeadlines(state.email, dlItems, sessionToken); }
 function dlDaysLeft(dateStr) { return Math.round((new Date(dateStr) - new Date(todayStr())) / 86400000); }
 
 function renderNextDeadline() {
@@ -1559,7 +1726,10 @@ function exportICS() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast('Exported ' + res.filename, 'success');
-  }).withFailureHandler(() => toast('Network error', 'error')).getMyCalendarICS(state.email, sessionToken);
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
+    toast('Network error', 'error');
+  }).getMyCalendarICS(state.email, sessionToken);
 }
 function exportMyData(format) {
   toast('Preparing your data…', 'info', 1200);
@@ -1580,7 +1750,10 @@ function exportMyData(format) {
       URL.revokeObjectURL(url);
       toast('Exported JSON', 'success');
     }
-  }).withFailureHandler(() => toast('Network error', 'error')).exportMyData(state.email, sessionToken, format);
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
+    toast('Network error', 'error');
+  }).exportMyData(state.email, sessionToken, format);
 }
 
 /* ============================================================
@@ -1671,6 +1844,7 @@ function submitBug() {
     } else { toast((res && res.msg) || 'Could not send report.', 'error'); }
   }).withFailureHandler(err => {
     btn.disabled = false; btn.innerText = 'Send report';
+    if (err && err.message === 'OFFLINE') return;
     toast('Could not send report: ' + (err && err.message ? err.message : err), 'error');
   }).submitBugReport(state.email, payload, sessionToken);
 }
@@ -1707,7 +1881,9 @@ function loadMyBugs() {
       }
       list.appendChild(item);
     });
-  }).withFailureHandler(() => {}).loadMyBugReports(state.email, sessionToken);
+  }).withFailureHandler(err => {
+    if (err && err.message === 'OFFLINE') return;
+  }).loadMyBugReports(state.email, sessionToken);
 }
 (function wireBugForm() {
   const t = document.getElementById('bug-details');
