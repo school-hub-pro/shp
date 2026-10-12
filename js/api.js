@@ -4,7 +4,7 @@
    ============================================================ */
 (function () {
   // ⬇⬇ PASTE YOUR /exec URL BETWEEN THE QUOTES
-  var API_URL = 'https://script.google.com/macros/s/AKfycbyVHZVgHFZb2Wn3_YqWdmtq9vDt7ykkSacUS1dLCBBwY9AcnJzIbh35RTfjtJnWrwhOFw/exec';
+  var API_URL = 'https://script.google.com/macros/s/AKfy.../exec';
 
   async function callApi(action, args) {
     // Fail immediately if the browser knows we are offline.
@@ -17,7 +17,7 @@
       res = await fetch(API_URL, {
         method: 'POST',
         // text/plain keeps this a CORS "simple request" (no preflight).
-        // Apps Script's redirect target does not answer OPTIONS.
+        // Apps Script's redirect target doesn't answer OPTIONS.
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: action, args: args || [] }),
         redirect: 'follow'
@@ -58,9 +58,8 @@
           callApi(prop, args).then(function (data) {
             if (onSuccess) onSuccess(data);
           }).catch(function (err) {
-            if (err && err.message === 'OFFLINE') {
-              if (window.showOfflinePage) window.showOfflinePage();
-            }
+            // Shim just forwards the error. Each call site decides
+            // whether to toast, show a message, or stay silent.
             if (onFailure) onFailure(err);
             else console.error('[api] ' + prop + ' failed:', err.message || err);
           });
