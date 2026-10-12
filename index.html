@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-accent="emerald">
 <head>
   <meta charset="UTF-8">
   <title>School Hub Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="School Hub">
   <link rel="icon" type="image/png" href="https://i.postimg.cc/LhKBst4H/Screenshot-2026-06-30-104638.png">
+  <link rel="apple-touch-icon" href="https://i.postimg.cc/LhKBst4H/Screenshot-2026-06-30-104638.png">
+  <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <link rel="stylesheet" href="css/style.css">
@@ -97,11 +103,8 @@
 
 <nav id="mobile-nav">
   <div class="mob-nav-item active" onclick="show('home')"><b>🏠</b></div>
-  <div class="mob-nav-item" onclick="show('focus')"><b>⏱️</b></div>
   <div class="mob-nav-item" onclick="show('tt')"><b>📅</b></div>
   <div class="mob-nav-item" onclick="show('calendar')"><b>🗓️</b></div>
-  <div class="mob-nav-item" onclick="show('grades')"><b>📝</b></div>
-  <div class="mob-nav-item" onclick="show('bugs')"><b>🐛</b></div>
   <div class="mob-nav-item" onclick="show('settings')"><b>⚙️</b></div>
 </nav>
 
@@ -317,6 +320,33 @@
           <button type="button" class="btn-sec" style="margin-top:14px;" onclick="signOutOtherDevices()">🚪 Sign out of other devices</button>
         </div>
         <div style="display:flex; flex-direction:column; gap:25px;">
+
+          <div class="set-section">
+            <h3>Appearance</h3>
+            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+              Pick an accent colour for buttons, highlights, and links across the app.
+            </p>
+            <div class="accent-picker" id="accent-picker">
+              <button type="button" class="accent-swatch" data-accent="emerald" style="background:#10b981" title="Emerald" aria-label="Emerald"></button>
+              <button type="button" class="accent-swatch" data-accent="blue"    style="background:#3b82f6" title="Blue"    aria-label="Blue"></button>
+              <button type="button" class="accent-swatch" data-accent="purple"  style="background:#8b5cf6" title="Purple"  aria-label="Purple"></button>
+              <button type="button" class="accent-swatch" data-accent="orange"  style="background:#f59e0b" title="Orange"  aria-label="Orange"></button>
+              <button type="button" class="accent-swatch" data-accent="pink"    style="background:#ec4899" title="Pink"    aria-label="Pink"></button>
+            </div>
+          </div>
+
+          <div class="set-section">
+            <h3>Quick Access</h3>
+            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+              Handy on phones — these pages are hidden from the bottom navigation bar.
+            </p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('focus')">⏱️ Focus Mode</button>
+              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('grades')">📝 Enter Grades</button>
+              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('bugs')">🐛 Report a Bug</button>
+            </div>
+          </div>
+
           <div class="set-section">
             <h3>Reminders</h3>
             <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
@@ -324,6 +354,7 @@
             </p>
             <button type="button" class="btn-sec" onclick="requestNotificationPermission()">Enable deadline reminders</button>
           </div>
+
           <div class="set-section">
             <h3>Academic Goals</h3>
             <form onsubmit="event.preventDefault(); addGoal();">
@@ -334,6 +365,7 @@
             </form>
             <div id="goal-list"></div>
           </div>
+
           <div class="set-section">
             <h3>Friends (Social)</h3>
             <form onsubmit="event.preventDefault(); addFriend();">
@@ -347,6 +379,7 @@
             </div>
             <button type="button" class="btn-sec" style="margin-top:14px;" onclick="show('bugs')">🐛 Report a Bug</button>
           </div>
+
           <div class="set-section">
             <h3>Data Export</h3>
             <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
@@ -358,6 +391,7 @@
               <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportICS()">📅 Calendar (.ics)</button>
             </div>
           </div>
+
         </div>
       </div>
 
