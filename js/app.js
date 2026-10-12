@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v4.0
+   School Hub Pro - student client, v4.1
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -138,6 +138,51 @@ function toast(message, type, duration, action) {
   container.appendChild(el);
   setTimeout(dismiss, duration);
 }
+
+/* ============================================================
+   BACK-BUTTON NAVIGATION
+   Pushes one history entry per view. Android hardware back pops
+   through the stack. When we hit the base entry, we stop
+   intercepting and let the browser close the PWA / leave the page.
+   ============================================================ */
+let historyPrimed = false;
+let suppressNextPush = false;
+
+function primeHistory(initialView) {
+  try {
+    history.replaceState({ shpView: initialView || 'home', shpBase: true }, '');
+    historyPrimed = true;
+  } catch (e) { historyPrimed = false; }
+}
+
+function pushViewHistory(view) {
+  if (!historyPrimed) return;
+  const cur = history.state;
+  if (cur && cur.shpView === view) return;
+  try {
+    history.pushState({ shpView: view }, '');
+  } catch (e) {}
+}
+
+function resetHistory() {
+  historyPrimed = false;
+  try { history.replaceState(null, ''); } catch (e) {}
+}
+
+window.addEventListener('popstate', function(e) {
+  if (!document.body.getAttribute('data-logged-in')) return;
+
+  const st = e.state;
+
+  // Popped past all our entries → let the browser handle it (exit PWA).
+  if (!st || st.shpBase) return;
+
+  if (st.shpView && st.shpView !== document.body.getAttribute('data-view')) {
+    suppressNextPush = true;
+    show(st.shpView);
+    suppressNextPush = false;
+  }
+});
 
 /* ============================================================
    OFFLINE PAGE
@@ -320,7 +365,7 @@ function triggerPullRefresh(indicator, spinner) {
     if (!dt) return todayStr();
     if (/^\d{4}-\d{2}-\d{2}$/.test(String(dt))) return String(dt);
     const p = new Date(dt);
-    return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}-${String(p.getDate()).padStart(2, '0')}`;
+    return p.getFullYear() + '-' + String(p.getMonth() + 1).padStart(2, '0') + '-' + String(p.getDate()).padStart(2, '0');
   };
 
   let pending = 2;
@@ -329,7 +374,7 @@ function triggerPullRefresh(indicator, spinner) {
   google.script.run
     .withSuccessHandler(items => {
       if (Array.isArray(items)) {
-        dlItems = items.map(i => ({ ...i, date: norm(i.date) }));
+        dlItems = items.map(i => Object.assign({}, i, { date: norm(i.date) }));
         renderNextDeadline();
         renderDashboardTasks();
         if (document.body.getAttribute('data-view') === 'calendar') {
@@ -534,11 +579,11 @@ function silentRefresh() {
     if (!dt) return todayStr();
     if (/^\d{4}-\d{2}-\d{2}$/.test(String(dt))) return String(dt);
     const p = new Date(dt);
-    return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}-${String(p.getDate()).padStart(2, '0')}`;
+    return p.getFullYear() + '-' + String(p.getMonth() + 1).padStart(2, '0') + '-' + String(p.getDate()).padStart(2, '0');
   };
   google.script.run.withSuccessHandler(items => {
     if (!Array.isArray(items)) return;
-    dlItems = items.map(i => ({ ...i, date: norm(i.date) }));
+    dlItems = items.map(i => Object.assign({}, i, { date: norm(i.date) }));
     renderNextDeadline();
     renderDashboardTasks();
     if (document.body.getAttribute('data-view') === 'calendar') {
@@ -716,6 +761,8 @@ async function logout() {
 
   document.body.removeAttribute('data-logged-in');
   document.body.removeAttribute('data-view');
+  resetHistory();
+
   const savedAuth = JSON.parse(localStorage.getItem('shp_auth_v5') || "null");
   if (savedAuth && savedAuth.email) {
     document.getElementById('auth-saved').style.display = 'block';
@@ -958,7 +1005,14 @@ function load() {
 
     document.getElementById('portal').style.display = 'none';
     document.body.setAttribute('data-logged-in', 'true');
+
+    // Reset and prime the history stack for the new session.
+    resetHistory();
+    primeHistory('home');
+    suppressNextPush = true;
     show('home');
+    suppressNextPush = false;
+
     lastRefreshAt = Date.now();
 
     document.getElementById('welcome').innerText = 'Good Day, ' + state.name;
@@ -1011,6 +1065,10 @@ function show(v) {
   if (v === 'focus') loadFocusExtended();
   if (v !== 'bugs' && BUG_PAGE_BY_VIEW[v]) lastAppView = v;
   if (v === 'bugs') openBugView();
+
+  if (!suppressNextPush && document.body.getAttribute('data-logged-in')) {
+    pushViewHistory(v);
+  }
 }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
