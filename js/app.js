@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.9
+   School Hub Pro - student client, v4.0
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -86,37 +86,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /* ============================================================
-   TOAST — supports an optional action button (e.g. Undo)
+   TOAST — with optional Undo action
    ============================================================ */
 function ensureToastActionStyles() {
   if (document.getElementById('toast-action-styles')) return;
   const style = document.createElement('style');
   style.id = 'toast-action-styles';
-  style.textContent = `
-    .toast-action {
-      background: rgba(255,255,255,.15);
-      border: 1px solid rgba(255,255,255,.25);
-      color: inherit;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-left: 6px;
-      flex-shrink: 0;
-      transition: background-color .15s, border-color .15s;
-    }
-    .toast-action:hover { background: rgba(255,255,255,.28); border-color: rgba(255,255,255,.4); }
-    .toast-action:active { background: rgba(255,255,255,.4); }
-    [data-theme="light"] .toast-action { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.15); }
-    [data-theme="light"] .toast-action:hover { background: rgba(0,0,0,.12); border-color: rgba(0,0,0,.25); }
-    [data-theme="light"] .toast-action:active { background: rgba(0,0,0,.2); }
-  `;
+  style.textContent = '.toast-action{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:inherit;padding:6px 12px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-left:6px;flex-shrink:0;transition:background-color .15s,border-color .15s}.toast-action:hover{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.4)}.toast-action:active{background:rgba(255,255,255,.4)}[data-theme="light"] .toast-action{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.15)}[data-theme="light"] .toast-action:hover{background:rgba(0,0,0,.12);border-color:rgba(0,0,0,.25)}[data-theme="light"] .toast-action:active{background:rgba(0,0,0,.2)}';
   document.head.appendChild(style);
 }
 
-function toast(message, type = 'info', duration = 3000, action = null) {
+function toast(message, type, duration, action) {
+  type = type || 'info';
+  duration = duration || 3000;
   ensureToastActionStyles();
   const container = document.getElementById('toast-container');
   if (!container) { window.alert(message); return; }
@@ -150,7 +132,6 @@ function toast(message, type = 'info', duration = 3000, action = null) {
       action.onClick();
     });
     el.appendChild(btn);
-    // Give the user a bit more time when there's an action to take
     if (duration < 5000) duration = 5000;
   }
 
@@ -192,76 +173,7 @@ function showOfflinePage() {
   if (!document.getElementById('offline-page-styles')) {
     const style = document.createElement('style');
     style.id = 'offline-page-styles';
-    style.textContent = `
-      #offline-page {
-        position: fixed; inset: 0; z-index: 100000;
-        background: linear-gradient(-45deg, #0f172a, #1e1b4b, #064e3b, #020617);
-        display: flex; align-items: center; justify-content: center;
-        padding: 24px; backdrop-filter: blur(12px);
-        animation: offlineIn .3s ease;
-      }
-      @keyframes offlineIn { from { opacity: 0; } to { opacity: 1; } }
-      .offline-card {
-        background: rgba(30, 41, 59, .85);
-        border: 1px solid rgba(255, 255, 255, .1);
-        border-radius: 24px;
-        padding: 36px 28px;
-        max-width: 400px; width: 100%;
-        text-align: center;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
-        backdrop-filter: blur(20px);
-        color: #f8fafc;
-        font-family: 'Inter', sans-serif;
-      }
-      .offline-icon { font-size: 56px; line-height: 1; margin-bottom: 18px; }
-      .offline-card h2 {
-        margin: 0 0 12px; font-size: 22px; font-weight: 800;
-        color: #ef4444; letter-spacing: -.2px;
-      }
-      .offline-card p {
-        margin: 0 0 16px; font-size: 13px; line-height: 1.6; color: #94a3b8;
-      }
-      .offline-card ul {
-        text-align: left; margin: 0 auto 22px; padding-left: 22px;
-        font-size: 13px; line-height: 1.8; color: #cbd5e1;
-      }
-      .offline-card li { margin-bottom: 2px; }
-      #offline-retry {
-        position: relative;
-        width: 100%; padding: 13px;
-        border-radius: 12px; border: none;
-        background: #10b981; color: #fff;
-        font-family: inherit; font-size: 14px; font-weight: 700;
-        cursor: pointer;
-        display: flex; align-items: center; justify-content: center; gap: 10px;
-        transition: background-color .2s, transform .15s, opacity .2s;
-      }
-      #offline-retry:hover:not(:disabled) { background: #059669; transform: translateY(-2px); }
-      #offline-retry:active:not(:disabled) { transform: translateY(0); }
-      #offline-retry:disabled { cursor: not-allowed; opacity: .75; transform: none; }
-      .offline-btn-spinner {
-        display: none;
-        width: 16px; height: 16px;
-        border: 2px solid rgba(255, 255, 255, .35);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: offlineSpin .8s linear infinite;
-      }
-      #offline-retry.loading .offline-btn-spinner { display: block; }
-      @keyframes offlineSpin { to { transform: rotate(360deg); } }
-      .offline-status {
-        margin: 14px 0 0; font-size: 12px; color: #f59e0b;
-        min-height: 16px; font-weight: 600;
-      }
-      [data-theme="light"] .offline-card {
-        background: rgba(255, 255, 255, .95);
-        border-color: rgba(0, 0, 0, .1);
-        color: #0f172a;
-      }
-      [data-theme="light"] .offline-card p { color: #475569; }
-      [data-theme="light"] .offline-card ul { color: #334155; }
-      [data-theme="light"] .offline-status { color: #d97706; }
-    `;
+    style.textContent = '#offline-page{position:fixed;inset:0;z-index:100000;background:linear-gradient(-45deg,#0f172a,#1e1b4b,#064e3b,#020617);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(12px);animation:offlineIn .3s ease}@keyframes offlineIn{from{opacity:0}to{opacity:1}}.offline-card{background:rgba(30,41,59,.85);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:36px 28px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);backdrop-filter:blur(20px);color:#f8fafc;font-family:Inter,sans-serif}.offline-icon{font-size:56px;line-height:1;margin-bottom:18px}.offline-card h2{margin:0 0 12px;font-size:22px;font-weight:800;color:#ef4444;letter-spacing:-.2px}.offline-card p{margin:0 0 16px;font-size:13px;line-height:1.6;color:#94a3b8}.offline-card ul{text-align:left;margin:0 auto 22px;padding-left:22px;font-size:13px;line-height:1.8;color:#cbd5e1}.offline-card li{margin-bottom:2px}#offline-retry{position:relative;width:100%;padding:13px;border-radius:12px;border:none;background:#10b981;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background-color .2s,transform .15s,opacity .2s}#offline-retry:hover:not(:disabled){background:#059669;transform:translateY(-2px)}#offline-retry:active:not(:disabled){transform:translateY(0)}#offline-retry:disabled{cursor:not-allowed;opacity:.75;transform:none}.offline-btn-spinner{display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:offlineSpin .8s linear infinite}#offline-retry.loading .offline-btn-spinner{display:block}@keyframes offlineSpin{to{transform:rotate(360deg)}}.offline-status{margin:14px 0 0;font-size:12px;color:#f59e0b;min-height:16px;font-weight:600}[data-theme="light"] .offline-card{background:rgba(255,255,255,.95);border-color:rgba(0,0,0,.1);color:#0f172a}[data-theme="light"] .offline-card p{color:#475569}[data-theme="light"] .offline-card ul{color:#334155}[data-theme="light"] .offline-status{color:#d97706}';
     document.head.appendChild(style);
   }
 
@@ -308,7 +220,7 @@ function hideOfflinePage() {
 }
 
 /* ============================================================
-   PULL-TO-REFRESH (mobile only)
+   PULL-TO-REFRESH
    ============================================================ */
 let ptrStartY = 0;
 let ptrPull = 0;
@@ -330,37 +242,7 @@ function setupPullToRefresh() {
   if (!document.getElementById('ptr-styles')) {
     const style = document.createElement('style');
     style.id = 'ptr-styles';
-    style.textContent = `
-      #ptr-indicator {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        height: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        pointer-events: none;
-        z-index: 99997;
-        transition: height .2s ease, opacity .2s ease;
-        opacity: 0;
-      }
-      #ptr-indicator.visible { opacity: 1; }
-      #ptr-indicator .ptr-spinner {
-        width: 28px; height: 28px;
-        border: 3px solid rgba(128,128,128,.25);
-        border-top-color: #10b981;
-        border-radius: 50%;
-        transform: rotate(0deg);
-        transition: transform .15s ease;
-      }
-      #ptr-indicator.refreshing .ptr-spinner {
-        animation: ptrSpin .8s linear infinite;
-      }
-      @keyframes ptrSpin { to { transform: rotate(360deg); } }
-      @media (max-width: 768px) {
-        #main { overscroll-behavior-y: contain; }
-      }
-    `;
+    style.textContent = '#ptr-indicator{position:fixed;top:0;left:0;right:0;height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;z-index:99997;transition:height .2s ease,opacity .2s ease;opacity:0}#ptr-indicator.visible{opacity:1}#ptr-indicator .ptr-spinner{width:28px;height:28px;border:3px solid rgba(128,128,128,.25);border-top-color:#10b981;border-radius:50%;transform:rotate(0deg);transition:transform .15s ease}#ptr-indicator.refreshing .ptr-spinner{animation:ptrSpin .8s linear infinite}@keyframes ptrSpin{to{transform:rotate(360deg)}}@media (max-width:768px){#main{overscroll-behavior-y:contain}}';
     document.head.appendChild(style);
   }
 
@@ -467,27 +349,6 @@ function triggerPullRefresh(indicator, spinner) {
 }
 
 /* ============================================================
-   ANDROID BACK BUTTON / BROWSER HISTORY
-   ============================================================ */
-let historyReady = false;
-
-function ensureHistoryInitialized() {
-  if (historyReady) return;
-  history.replaceState({ view: 'home' }, '', location.pathname + location.search);
-  historyReady = true;
-}
-
-function initHistoryNavigation() {
-  window.addEventListener('popstate', e => {
-    // If the user isn't logged in, let the browser handle back natively
-    // (it will close the PWA or go back to the previous page).
-    if (!document.body.getAttribute('data-logged-in')) return;
-    const view = (e.state && e.state.view) || 'home';
-    show(view, { fromPop: true });
-  });
-}
-
-/* ============================================================
    THEME
    ============================================================ */
 function applyTheme(theme) {
@@ -533,13 +394,11 @@ function applyAccent(name) {
   const safeName = ACCENT_PRESETS[name] ? name : 'emerald';
   const preset = ACCENT_PRESETS[safeName];
   const root = document.documentElement;
-
   root.setAttribute('data-accent', safeName);
   root.style.setProperty('--primary', preset.primary);
   root.style.setProperty('--primary-dark', preset.dark);
   root.style.setProperty('--primary-glow', preset.glow);
   root.style.setProperty('--primary-dim', preset.dim);
-
   localStorage.setItem('shp_accent', safeName);
   updateAccentSwatchSelection();
 }
@@ -588,7 +447,6 @@ window.onload = () => {
   initAccent();
   wireAccentSwatches();
   registerServiceWorker();
-  initHistoryNavigation();
   setupPullToRefresh();
 
   const superOld = localStorage.getItem('shp_user_email_v4');
@@ -655,7 +513,7 @@ window.onload = () => {
 };
 
 /* ============================================================
-   SERVICE WORKER REGISTRATION
+   SERVICE WORKER
    ============================================================ */
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
@@ -668,7 +526,7 @@ function registerServiceWorker() {
 }
 
 /* ============================================================
-   SILENT REFRESH (on tab return)
+   SILENT REFRESH
    ============================================================ */
 function silentRefresh() {
   if (!state.email || !sessionToken) return;
@@ -858,9 +716,6 @@ async function logout() {
 
   document.body.removeAttribute('data-logged-in');
   document.body.removeAttribute('data-view');
-  historyReady = false;
-  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-
   const savedAuth = JSON.parse(localStorage.getItem('shp_auth_v5') || "null");
   if (savedAuth && savedAuth.email) {
     document.getElementById('auth-saved').style.display = 'block';
@@ -1069,7 +924,7 @@ function acceptFriend(friendEmail) {
     toast('Could not reach the server.', 'error');
   }).acceptFriendRequest(state.email, friendEmail, sessionToken);
 }
-async function removeFriend(friendEmail, isReject = false) {
+async function removeFriend(friendEmail, isReject) {
   const msg = isReject ? 'Reject this friend request?' : 'Are you sure you want to remove this friend or cancel the request?';
   const yes = await shpConfirm(msg);
   if (!yes) return;
@@ -1103,7 +958,6 @@ function load() {
 
     document.getElementById('portal').style.display = 'none';
     document.body.setAttribute('data-logged-in', 'true');
-    historyReady = false;
     show('home');
     lastRefreshAt = Date.now();
 
@@ -1147,8 +1001,7 @@ function load() {
   }).loadAppData(state.email, sessionToken);
 }
 
-function show(v, opts) {
-  opts = opts || {};
+function show(v) {
   document.querySelectorAll('.view, .nav-item, .mob-nav-item').forEach(x => x.classList.remove('active'));
   const viewEl = document.getElementById('view-' + v);
   if (viewEl) viewEl.classList.add('active');
@@ -1158,15 +1011,6 @@ function show(v, opts) {
   if (v === 'focus') loadFocusExtended();
   if (v !== 'bugs' && BUG_PAGE_BY_VIEW[v]) lastAppView = v;
   if (v === 'bugs') openBugView();
-
-  // History management for the Android back button
-  if (!opts.fromPop && document.body.getAttribute('data-logged-in')) {
-    ensureHistoryInitialized();
-    const cur = history.state;
-    if (!cur || cur.view !== v) {
-      history.pushState({ view: v }, '', '#' + v);
-    }
-  }
 }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
@@ -1197,7 +1041,7 @@ function populateSubjects() {
 }
 
 /* ============================================================
-   FOCUS STATS RENDERING
+   FOCUS STATS
    ============================================================ */
 function renderFocusStats() {
   document.getElementById('dash-focus-total').innerText = state.focusMinutesToday;
@@ -1270,7 +1114,7 @@ const RING_CIRCUMFERENCE = 276.46;
 function updateTimerDisplay() {
   const m = Math.floor(focusTimeLeft / 60).toString().padStart(2, '0');
   const s = (focusTimeLeft % 60).toString().padStart(2, '0');
-  document.getElementById('timer-display').innerText = `${m}:${s}`;
+  document.getElementById('timer-display').innerText = m + ':' + s;
   const fill = document.getElementById('ring-fill');
   if (fill && focusInitialMins > 0) {
     const progress = 1 - (focusTimeLeft / (focusInitialMins * 60));
@@ -1462,8 +1306,8 @@ function pdfRenderAll() {
   if (!pdfDoc) return;
   const container = document.getElementById('pdf-scroll');
   container.innerHTML = '';
-  document.getElementById('pdf-page-info').innerText = `${pdfCurrentPage} / ${pdfDoc.numPages}`;
-  document.getElementById('pdf-zoom-info').innerText = `${Math.round(pdfScale * 100)}%`;
+  document.getElementById('pdf-page-info').innerText = pdfCurrentPage + ' / ' + pdfDoc.numPages;
+  document.getElementById('pdf-zoom-info').innerText = Math.round(pdfScale * 100) + '%';
   const outputScale = window.devicePixelRatio || 1;
   for (let i = 1; i <= pdfDoc.numPages; i++) {
     pdfDoc.getPage(i).then(page => {
@@ -1472,8 +1316,8 @@ function pdfRenderAll() {
       const ctx = canvas.getContext('2d');
       canvas.width = Math.floor(vp.width * outputScale);
       canvas.height = Math.floor(vp.height * outputScale);
-      canvas.style.width = `${Math.floor(vp.width)}px`;
-      canvas.style.height = `${Math.floor(vp.height)}px`;
+      canvas.style.width = Math.floor(vp.width) + 'px';
+      canvas.style.height = Math.floor(vp.height) + 'px';
       page.render({ canvasContext: ctx, transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null, viewport: vp });
       container.appendChild(canvas);
     });
@@ -1517,7 +1361,9 @@ function render() {
   }
   subjs.forEach(s => {
     const v = (state.grades[state.exam] || {})[s] || '';
-    const { pct, hasValue } = calculatePct(v);
+    const pctInfo = calculatePct(v);
+    const pct = pctInfo.pct;
+    const hasValue = pctInfo.hasValue;
     const g = getGradeInfo(pct, hasValue);
     const card = document.createElement('div');
     card.className = 'subject-card';
@@ -1549,10 +1395,12 @@ function update(s, v) {
   try { card = document.querySelector('.subject-card[data-subject="' + CSS.escape(s) + '"]'); }
   catch (e) { card = Array.from(document.querySelectorAll('.subject-card')).find(c => c.dataset.subject === s) || null; }
   if (card) {
-    const { pct, hasValue } = calculatePct(v);
+    const pctInfo = calculatePct(v);
+    const pct = pctInfo.pct;
+    const hasValue = pctInfo.hasValue;
     const g = getGradeInfo(pct, hasValue);
     card.querySelector('.grade-badge').className = 'grade-badge ' + g.color;
-    card.querySelector('.grade-badge').textContent = g.label !== '--' ? `${g.label} (${g.pts})` : '--';
+    card.querySelector('.grade-badge').textContent = g.label !== '--' ? g.label + ' (' + g.pts + ')' : '--';
     card.querySelector('.grade-meter-bar').style.width = g.fill + '%';
     card.querySelector('.grade-meter-bar').style.background = g.bar;
     card.querySelector('.grade-meter-label').textContent = hasValue ? Math.round(pct) + '%' : '';
@@ -1560,11 +1408,13 @@ function update(s, v) {
 }
 function calculatePct(v) {
   if (!v || !v.includes('/')) return { pct: 0, hasValue: false };
-  const [a, b] = v.split('/').map(Number);
+  const parts = v.split('/').map(Number);
+  const a = parts[0];
+  const b = parts[1];
   if (isNaN(a) || isNaN(b) || b === 0 || a < 0 || b < 0) return { pct: 0, hasValue: false };
   let pct = (a / b) * 100;
   if (pct > 100) pct = 100;
-  return { pct, hasValue: true };
+  return { pct: pct, hasValue: true };
 }
 const EXAM_WEIGHTS = { WA1: 15, WA2: 15, WA3: 15, EOY: 55 };
 function updateAggs() {
@@ -1580,8 +1430,8 @@ function updateAggs() {
     ['WA1', 'WA2', 'WA3', 'EOY'].forEach(ex => {
       const v = (state.grades[ex] || {})[subj];
       if (!v) return;
-      const { pct, hasValue } = calculatePct(v);
-      if (hasValue) { weightedSum += pct * EXAM_WEIGHTS[ex]; weightTotal += EXAM_WEIGHTS[ex]; }
+      const pctInfo = calculatePct(v);
+      if (pctInfo.hasValue) { weightedSum += pctInfo.pct * EXAM_WEIGHTS[ex]; weightTotal += EXAM_WEIGHTS[ex]; }
     });
     const meanPct = weightTotal ? (weightedSum / weightTotal) : null;
     const g = getGradeInfo(meanPct || 0, meanPct !== null);
@@ -1618,7 +1468,9 @@ function showSubjectBreakdown(subj) {
   const tbody = document.createElement('tbody');
   exams.forEach(ex => {
     const v = (state.grades[ex] || {})[subj];
-    const { pct, hasValue } = calculatePct(v);
+    const pctInfo = calculatePct(v);
+    const pct = pctInfo.pct;
+    const hasValue = pctInfo.hasValue;
     const g = getGradeInfo(pct, hasValue);
     const tr = document.createElement('tr');
     const tdExam = document.createElement('td'); tdExam.style.cssText = 'padding:8px 6px;text-align:left;font-weight:700;'; tdExam.textContent = ex;
@@ -1672,13 +1524,13 @@ function setSaveIndicator(status) {
    ============================================================ */
 function todayStr() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function escHtml(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 function localDateStr(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function expandRecurring(startDate, untilDate, freq) {
   const out = [startDate];
@@ -1703,29 +1555,29 @@ let calAllEvents = [], calCurrentDate = new Date(), calSelectedDate = todayStr()
 
 function getCombinedEvents() {
   const deadlinesAsEvents = dlItems.map(d => ({ id: d.id, title: d.title, subject: d.subject, date: d.date, type: 'deadline', done: d.done }));
-  return [...calAllEvents, ...deadlinesAsEvents];
+  return calAllEvents.concat(deadlinesAsEvents);
 }
 function calInit() {
   document.getElementById('ev-date-input').value = todayStr();
   const daysHeader = document.getElementById('cal-days-header');
   daysHeader.innerHTML = '';
-  ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => { daysHeader.innerHTML += `<div class="cal-day-head">${day}</div>`; });
+  ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => { daysHeader.innerHTML += '<div class="cal-day-head">' + day + '</div>'; });
   Promise.all([
     new Promise(res => google.script.run.withSuccessHandler(res).withFailureHandler(() => res([])).loadEvents(state.email, sessionToken)),
     new Promise(res => google.script.run.withSuccessHandler(res).withFailureHandler(() => res([])).getGoogleCalendarEvents(state.email, sessionToken)),
     new Promise(res => google.script.run.withSuccessHandler(res).withFailureHandler(() => res([])).loadDeadlines(state.email, sessionToken))
-  ]).then(([p, s, d]) => {
+  ]).then(results => {
+    const p = results[0], s = results[1], d = results[2];
     const norm = (dt) => {
       if (!dt) return todayStr();
       if (/^\d{4}-\d{2}-\d{2}$/.test(String(dt))) return String(dt);
       const parsed = new Date(dt);
-      return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+      return parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
     };
-    calAllEvents = [
-      ...(p || []).map(e => ({ ...e, type: 'personal', date: norm(e.date) })),
-      ...(s || []).map(e => ({ ...e, type: 'school', date: norm(e.date) }))
-    ];
-    dlItems = (d || []).map(i => ({ ...i, date: norm(i.date) }));
+    calAllEvents = [];
+    (p || []).forEach(e => calAllEvents.push(Object.assign({}, e, { type: 'personal', date: norm(e.date) })));
+    (s || []).forEach(e => calAllEvents.push(Object.assign({}, e, { type: 'school', date: norm(e.date) })));
+    dlItems = (d || []).map(i => Object.assign({}, i, { date: norm(i.date) }));
     calRenderMonth(); dlRender();
     renderNextDeadline();
   }).catch(err => console.error("Planner failed:", err));
@@ -1740,8 +1592,8 @@ function calRenderMonth() {
   for (let i = 0; i < firstDay.getDay(); i++) grid.innerHTML += '<div class="cal-day other-month"></div>';
   const allEvents = getCombinedEvents();
   for (let i = 1; i <= lastDay.getDate(); i++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-    let dayHtml = `<div class="cal-day ${dateStr === todayStr() ? 'today' : ''} ${dateStr === calSelectedDate ? 'selected' : ''}" data-date="${dateStr}"><div class="day-number">${i}</div>`;
+    const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
+    let dayHtml = '<div class="cal-day ' + (dateStr === todayStr() ? 'today' : '') + ' ' + (dateStr === calSelectedDate ? 'selected' : '') + '" data-date="' + dateStr + '"><div class="day-number">' + i + '</div>';
     const eventsOnDay = allEvents.filter(e => e.date === dateStr);
     if (eventsOnDay.length > 0) {
       dayHtml += '<div class="cal-dots">';
@@ -1766,7 +1618,7 @@ function calRenderEventList() {
   if (!items.length) { container.innerHTML = '<div class="dl-empty"><span class="dl-empty-icon">📅</span>No events.</div>'; return; }
   items.forEach(item => {
     const el = document.createElement('div');
-    el.className = `cal-event-item ${item.type} ${item.done ? 'done' : ''}`;
+    el.className = 'cal-event-item ' + item.type + ' ' + (item.done ? 'done' : '');
     if (item.type === 'deadline') {
       const cb = document.createElement('input');
       cb.type = 'checkbox'; cb.className = 'dl-cb'; cb.style.cssText = 'position:absolute;right:10px;top:12px;';
@@ -1820,7 +1672,7 @@ function evAdd() {
   dates.forEach(d => {
     calAllEvents.push({
       id: Date.now() + Math.floor(Math.random() * 1000),
-      title,
+      title: title,
       date: d,
       startTime: document.getElementById('ev-start-input').value,
       endTime: document.getElementById('ev-end-input').value,
@@ -1907,7 +1759,7 @@ function renderDashboardTasks() {
   if (pending.length === 0) { cont.innerHTML = '<div class="dash-task-item empty">All caught up! 🎉</div>'; return; }
   pending.slice(0, 3).forEach(item => {
     const days = dlDaysLeft(item.date);
-    const daysLabel = days < 0 ? 'Overdue' : days === 0 ? 'Today' : `In ${days}d`;
+    const daysLabel = days < 0 ? 'Overdue' : days === 0 ? 'Today' : ('In ' + days + 'd');
     const color = days < 0 ? 'var(--danger)' : days <= 1 ? 'var(--deadline)' : 'var(--primary)';
     const row = document.createElement('div'); row.className = 'dash-task-item';
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.style.accentColor = color;
@@ -1931,7 +1783,7 @@ function dlAdd() {
   const until = document.getElementById('dl-until-input').value;
   const dates = recur && until ? expandRecurring(date, until, recur) : [date];
   dates.forEach((d, idx) => {
-    dlItems.push({ id: Date.now() + idx, title, subject, date: d, done: false });
+    dlItems.push({ id: Date.now() + idx, title: title, subject: subject, date: d, done: false });
   });
   dlPush();
   document.getElementById('dl-title-input').value = '';
@@ -1972,7 +1824,7 @@ function dlRender() {
   const container = document.getElementById('dl-list');
   if (!container) return;
   container.textContent = '';
-  let items = [...dlItems];
+  let items = dlItems.slice();
   const today = todayStr();
   if (dlFilter === 'pending') items = items.filter(x => !x.done);
   if (dlFilter === 'overdue') items = items.filter(x => !x.done && x.date < today);
@@ -2001,12 +1853,12 @@ function dlRender() {
     const days = dlDaysLeft(item.date);
     let daysLabel, daysClass, itemClass;
     if (item.done) { daysLabel = 'Done'; daysClass = 'done-lbl'; itemClass = 'done'; }
-    else if (days < 0) { daysLabel = `${Math.abs(days)}d overdue`; daysClass = 'overdue'; itemClass = 'overdue'; }
+    else if (days < 0) { daysLabel = Math.abs(days) + 'd overdue'; daysClass = 'overdue'; itemClass = 'overdue'; }
     else if (days === 0) { daysLabel = 'Due today'; daysClass = 'today'; itemClass = 'due-soon'; }
-    else if (days <= 3) { daysLabel = `In ${days}d`; daysClass = 'soon'; itemClass = 'due-soon'; }
-    else { daysLabel = `In ${days}d`; daysClass = 'ok'; itemClass = 'due-ok'; }
+    else if (days <= 3) { daysLabel = 'In ' + days + 'd'; daysClass = 'soon'; itemClass = 'due-soon'; }
+    else { daysLabel = 'In ' + days + 'd'; daysClass = 'ok'; itemClass = 'due-ok'; }
     const el = document.createElement('div');
-    el.className = `dl-item ${itemClass}`;
+    el.className = 'dl-item ' + itemClass;
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'dl-cb';
     cb.checked = !!item.done;
     cb.addEventListener('change', () => dlToggle(item.id));
@@ -2032,7 +1884,7 @@ function dlRender() {
 }
 
 /* ============================================================
-   ICS EXPORT / PERSONAL DATA EXPORT
+   EXPORT
    ============================================================ */
 function exportICS() {
   toast('Preparing .ics…', 'info', 1200);
@@ -2099,7 +1951,7 @@ setInterval(() => {
       sessionStorage.setItem(key, '1');
       try {
         new Notification('School Hub Pro — Upcoming Deadline', {
-          body: `${item.title}${item.subject ? ' (' + item.subject + ')' : ''} — ${days === 0 ? 'due today' : 'due tomorrow'}`,
+          body: item.title + (item.subject ? ' (' + item.subject + ')' : '') + ' — ' + (days === 0 ? 'due today' : 'due tomorrow'),
           icon: 'favicon.png'
         });
       } catch (e) {}
@@ -2210,7 +2062,7 @@ function loadMyBugs() {
 })();
 
 /* ============================================================
-   LEGAL MODAL — Privacy Policy / Terms & Conditions
+   LEGAL MODAL
    ============================================================ */
 (function wireLegalModal() {
   const btn = document.getElementById('legal-btn');
