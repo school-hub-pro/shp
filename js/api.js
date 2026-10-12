@@ -16,7 +16,13 @@
       redirect: 'follow'
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    var json = await res.json();
+    var text = await res.text();
+    var json;
+    try { json = JSON.parse(text); }
+    catch (e) {
+      // Most common cause: URL is wrong and Apps Script returned an HTML page.
+      throw new Error('Non-JSON response from backend: ' + text.slice(0, 120));
+    }
     if (!json.ok) throw new Error(json.error || 'Server error');
     return json.data;
   }
@@ -24,26 +30,31 @@
   function createRunner() {
     var onSuccess = null;
     var onFailure = null;
-    var runner = {
+    var runner;
+
+    var handlers = {
       withSuccessHandler: function (fn) { onSuccess = fn; return runner; },
       withFailureHandler: function (fn) { onFailure = fn; return runner; },
       withUserObject:     function ()   { return runner; }
     };
-    return new Proxy(runner, {
+
+    runner = new Proxy({}, {
       get: function (target, prop) {
-        if (prop in target) return target[prop];
+        if (prop in handlers) return handlers[prop];
         if (typeof prop !== 'string') return undefined;
         return function () {
           var args = Array.prototype.slice.call(arguments);
           callApi(prop, args).then(function (data) {
             if (onSuccess) onSuccess(data);
           }).catch(function (err) {
+            console.error('[api] ' + prop + ' failed:', err.message || err);
             if (onFailure) onFailure(err);
-            else console.error('[api] ' + prop + ' failed:', err);
           });
         };
       }
     });
+
+    return runner;
   }
 
   if (!window.google) window.google = {};
