@@ -353,7 +353,7 @@ textarea.set-input { resize: vertical; line-height: 1.55; font-size: 13px; font-
   font-weight: 700;
   line-height: 1;
   letter-spacing: .2px;
-  z-index: 8000;
+  z-index: 10001;   /* was 8000 — must sit above #auth (9999) so it is clickable on the login screen */
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
   transition: background-color .2s, color .2s, border-color .2s, transform .15s, box-shadow .2s;
@@ -395,7 +395,6 @@ textarea.set-input { resize: vertical; line-height: 1.55; font-size: 13px; font-
   }
   .legal-btn-icon { width: 20px; height: 20px; font-size: 11px; }
   .legal-btn-text { font-size: 11px; }
-  /* When logged in, mobile nav appears at the bottom — lift the pill above it */
   body[data-logged-in="true"] .legal-btn { bottom: 84px; }
 }
 
@@ -403,7 +402,7 @@ textarea.set-input { resize: vertical; line-height: 1.55; font-size: 13px; font-
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 10001;
+  z-index: 10002;   /* was 10001 — must sit above .legal-btn (10001) */
   display: flex;
   align-items: center;
   justify-content: center;
