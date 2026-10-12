@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.1
+   School Hub Pro - student client, v3.3
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -325,8 +325,6 @@ async function logout() {
   const yes = await shpConfirm('Log out of User: ' + state.name + '?');
   if (!yes) return;
   if (focusInterval) resetTimer();
-  const focusGuard = document.getElementById('focus-guard-overlay');
-  if (focusGuard) focusGuard.style.display = 'none';
 
   const tokenForLogout = sessionToken;
   const emailForLogout = state.email;
@@ -695,12 +693,10 @@ function loadFocusExtended() {
 }
 
 /* ============================================================
-   FOCUS TIMER + STRICT MODE
+   FOCUS TIMER — plain timer, no strict mode
    ============================================================ */
 let focusTimeLeft = 1500, focusInterval = null, isFocusing = false, focusInitialMins = 25;
-let focusGuardTimer = null;
 let focusSubjectForSession = '';
-let strictListenersAttached = false;
 const RING_CIRCUMFERENCE = 276.46;
 
 function updateTimerDisplay() {
@@ -734,13 +730,10 @@ document.getElementById('focus-mins-input').addEventListener('input', function()
 function toggleTimer() {
   const btn = document.getElementById('timer-start-btn');
   const ring = document.getElementById('timer-ring');
-  const strict = document.getElementById('strict-mode-cb').checked;
   if (isFocusing) {
     clearInterval(focusInterval); focusInterval = null;
     btn.innerText = "Resume Focus"; btn.style.background = "var(--primary)";
     ring.classList.remove('active'); isFocusing = false;
-    detachStrictListeners();
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   } else {
     focusInitialMins = getTotalMins();
     focusTimeLeft = focusInitialMins * 60;
@@ -761,50 +754,8 @@ function toggleTimer() {
         resetTimer();
       }
     }, 1000);
-    if (strict) attachStrictListeners();
   }
 }
-function attachStrictListeners() {
-  if (strictListenersAttached) return;
-  strictListenersAttached = true;
-  if (document.fullscreenEnabled) {
-    const el = document.documentElement;
-    const req = el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' });
-    if (req && req.catch) req.catch(() => {});
-  }
-  document.addEventListener('fullscreenchange', onFullscreenChange, true);
-  document.addEventListener('visibilitychange', onStrictVisibilityChange);
-  window.addEventListener('beforeunload', onStrictBeforeUnload);
-}
-function detachStrictListeners() {
-  if (!strictListenersAttached) return;
-  strictListenersAttached = false;
-  document.removeEventListener('fullscreenchange', onFullscreenChange, true);
-  document.removeEventListener('visibilitychange', onStrictVisibilityChange);
-  window.removeEventListener('beforeunload', onStrictBeforeUnload);
-  if (focusGuardTimer) { clearTimeout(focusGuardTimer); focusGuardTimer = null; }
-  hideFocusGuard();
-}
-function onFullscreenChange() { if (!isFocusing) return; if (document.fullscreenElement) return; pauseForGuard('You left fullscreen during a focus session.'); }
-function onStrictVisibilityChange() {
-  if (document.hidden && isFocusing) {
-    focusGuardTimer = setTimeout(() => { if (document.hidden && isFocusing) pauseForGuard('You switched tabs during a focus session.'); }, 800);
-  } else if (!document.hidden) {
-    if (focusGuardTimer) { clearTimeout(focusGuardTimer); focusGuardTimer = null; }
-  }
-}
-function onStrictBeforeUnload(e) { if (!isFocusing) return; e.preventDefault(); e.returnValue = 'Strict Mode is active!'; return 'Strict Mode is active!'; }
-function pauseForGuard(reason) {
-  if (!isFocusing) return;
-  if (focusInterval) { clearInterval(focusInterval); focusInterval = null; }
-  const overlay = document.getElementById('focus-guard-overlay');
-  if (overlay) {
-    const p = overlay.querySelector('p');
-    if (p && reason) p.innerText = reason + ' Your timer has been paused.';
-    overlay.style.display = 'flex';
-  }
-}
-function hideFocusGuard() { const overlay = document.getElementById('focus-guard-overlay'); if (overlay) overlay.style.display = 'none'; }
 function persistFocusSession(subject, minutes) {
   google.script.run.withSuccessHandler(res => {
     if (res && res.success && res.focus) {
@@ -823,9 +774,7 @@ function persistFocusSession(subject, minutes) {
 }
 function resetTimer() {
   clearInterval(focusInterval); focusInterval = null;
-  if (focusGuardTimer) { clearTimeout(focusGuardTimer); focusGuardTimer = null; }
   isFocusing = false;
-  detachStrictListeners();
   focusInitialMins = getTotalMins();
   focusTimeLeft = focusInitialMins * 60;
   updateTimerDisplay();
@@ -835,25 +784,7 @@ function resetTimer() {
   document.getElementById('focus-hours-input').disabled = false;
   document.getElementById('focus-mins-input').disabled = false;
   document.getElementById('focus-subj-input').disabled = false;
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
-function resumeFocusAfterGuard() {
-  hideFocusGuard();
-  if (document.fullscreenEnabled && document.getElementById('strict-mode-cb').checked) {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
-  }
-  focusInterval = setInterval(() => {
-    focusTimeLeft--; updateTimerDisplay();
-    if (focusTimeLeft <= 0) {
-      clearInterval(focusInterval); focusInterval = null;
-      toast("Focus session complete!", "success", 4000);
-      persistFocusSession(focusSubjectForSession, focusInitialMins);
-      resetTimer();
-    }
-  }, 1000);
-}
-function abandonFocus() { hideFocusGuard(); resetTimer(); }
 
 /* ============================================================
    GOALS
@@ -876,22 +807,7 @@ function addGoal() {
 }
 
 /* ============================================================
-   PDF VIEWER — DIAGNOSTIC
-   ------------------------------------------------------------
-   Previous version silently fell back to the Drive iframe on any
-   failure mode of getPdfBase64 (null return), and the header
-   buttons (prev/next/zoom/fit) short-circuit when `pdfDoc` is
-   null, so they rendered but did nothing — which is why the
-   view looked like "Google's viewer with no controls".
-
-   New behavior:
-     • Server now returns { ok, b64 } or { ok:false, reason, msg }
-     • Client logs the reason to the browser console on failure
-     • A small amber badge appears over the iframe explaining why
-       the fallback fired (session / allowlist / drive / size /
-       parse / decode / rpc / no-lib)
-   Open DevTools → Console after visiting Timetable to see the
-   actual cause.
+   PDF VIEWER
    ============================================================ */
 let pdfDoc = null, pdfScale = 1.0, pdfCurrentPage = 1;
 
@@ -899,8 +815,6 @@ function initPdfViewer(fileId) {
   const container = document.getElementById('pdf-scroll');
   if (!container) return;
 
-  // Library check — if pdfjsLib didn't load (blocked CDN, offline, etc.)
-  // there's no point in even calling the server.
   if (typeof pdfjsLib === 'undefined') {
     console.error('[pdf] pdfjsLib undefined — CDN blocked or script not loaded');
     pdfShowFallback(container, fileId, 'no-lib', 'PDF.js library not loaded');
@@ -915,8 +829,6 @@ function initPdfViewer(fileId) {
 
   google.script.run
     .withSuccessHandler(res => {
-      // Envelope: { ok:true, b64 } on success, { ok:false, reason, msg } on failure.
-      // Also tolerate a bare string in case an older deployment is still in front.
       const b64 = typeof res === 'string' ? res : (res && res.ok ? res.b64 : null);
       if (!b64) {
         const reason = (res && res.reason) || 'unavailable';
