@@ -333,30 +333,30 @@ textarea.set-input { resize: vertical; line-height: 1.55; font-size: 13px; font-
 @media (max-width: 768px) { .bug-row { grid-template-columns: 1fr; } }
 
 /* ============================================================
-   ACCENT COLOUR PICKER — large, thumb-friendly swatches
+   ACCENT COLOUR PICKER — 44px swatches (comfortable touch target)
    ============================================================ */
 .accent-picker {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 .accent-swatch {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   cursor: pointer;
   padding: 0;
   transition: transform .15s, border-color .2s, box-shadow .2s;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
   position: relative;
 }
 .accent-swatch:hover { transform: scale(1.08); }
 .accent-swatch:active { transform: scale(0.96); }
 .accent-swatch.active {
   border-color: var(--text);
-  box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 6px var(--text), 0 3px 12px rgba(0, 0, 0, .35);
+  box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--text), 0 2px 8px rgba(0, 0, 0, .3);
 }
 .accent-swatch.active::after {
   content: '✓';
@@ -366,14 +366,14 @@ textarea.set-input { resize: vertical; line-height: 1.55; font-size: 13px; font-
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 900;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, .5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .4);
 }
 @media (max-width: 768px) {
-  .accent-picker { gap: 12px; }
-  .accent-swatch { width: 52px; height: 52px; }
-  .accent-swatch.active::after { font-size: 24px; }
+  .accent-picker { gap: 10px; }
+  .accent-swatch { width: 44px; height: 44px; }
+  .accent-swatch.active::after { font-size: 18px; }
 }
 
 /* ============================================================
