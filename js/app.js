@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v3.4
+   School Hub Pro - student client, v3.5
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -112,6 +112,7 @@ function toast(message, type = 'info', duration = 3000) {
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('shp_theme', theme);
+  updateThemeColorMeta();
 }
 function toggleTheme() {
   const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
@@ -123,6 +124,47 @@ function initTheme() {
   if (saved === 'dark' || saved === 'light') { applyTheme(saved); return; }
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyTheme(prefersDark ? 'dark' : 'light');
+}
+function updateThemeColorMeta() {
+  const theme = document.documentElement.getAttribute('data-theme');
+  const color = theme === 'light' ? '#f1f5f9' : '#0f172a';
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    document.head.appendChild(meta);
+  }
+  meta.content = color;
+}
+
+/* ============================================================
+   ACCENT COLOUR
+   ============================================================ */
+function applyAccent(name) {
+  const valid = ['emerald', 'blue', 'purple', 'orange', 'pink'];
+  const safe = valid.indexOf(name) === -1 ? 'emerald' : name;
+  document.documentElement.setAttribute('data-accent', safe);
+  localStorage.setItem('shp_accent', safe);
+  updateAccentSwatchSelection();
+}
+function initAccent() {
+  const saved = localStorage.getItem('shp_accent') || 'emerald';
+  applyAccent(saved);
+}
+function updateAccentSwatchSelection() {
+  const current = document.documentElement.getAttribute('data-accent') || 'emerald';
+  document.querySelectorAll('.accent-swatch').forEach(el => {
+    el.classList.toggle('active', el.dataset.accent === current);
+  });
+}
+function wireAccentSwatches() {
+  document.querySelectorAll('.accent-swatch').forEach(el => {
+    el.addEventListener('click', () => {
+      applyAccent(el.dataset.accent);
+      toast('Accent updated', 'success', 1200);
+    });
+  });
+  updateAccentSwatchSelection();
 }
 
 /* ============================================================
@@ -140,12 +182,17 @@ let resetEmailMemory = "";
 let friends = [];
 let pendingIncoming = [];
 let pendingOutgoing = [];
+let lastRefreshAt = 0;
 
 /* ============================================================
    ONLOAD
    ============================================================ */
 window.onload = () => {
   initTheme();
+  initAccent();
+  wireAccentSwatches();
+  registerServiceWorker();
+
   const superOld = localStorage.getItem('shp_user_email_v4');
   if (superOld) localStorage.removeItem('shp_user_email_v4');
 
@@ -175,6 +222,16 @@ window.onload = () => {
     if (navMap[e.key]) show(navMap[e.key]);
   });
 
+  // --- Auto-refresh when the tab becomes visible again ---
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    if (!document.body.getAttribute('data-logged-in')) return;
+    const now = Date.now();
+    if (now - lastRefreshAt < 30000) return;
+    lastRefreshAt = now;
+    silentRefresh();
+  });
+
   const passInp = document.getElementById('set-pass-input');
   const strengthEl = document.getElementById('pw-strength');
   if (passInp && strengthEl) {
@@ -185,6 +242,42 @@ window.onload = () => {
     });
   }
 };
+
+/* ============================================================
+   SERVICE WORKER REGISTRATION
+   ============================================================ */
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.warn('[sw] registration failed:', err && err.message);
+    });
+  });
+}
+
+/* ============================================================
+   SILENT REFRESH (on tab return)
+   ============================================================ */
+function silentRefresh() {
+  if (!state.email || !sessionToken) return;
+  const norm = dt => {
+    if (!dt) return todayStr();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(dt))) return String(dt);
+    const p = new Date(dt);
+    return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}-${String(p.getDate()).padStart(2, '0')}`;
+  };
+  google.script.run.withSuccessHandler(items => {
+    if (!Array.isArray(items)) return;
+    dlItems = items.map(i => ({ ...i, date: norm(i.date) }));
+    renderNextDeadline();
+    renderDashboardTasks();
+    if (document.body.getAttribute('data-view') === 'calendar') {
+      dlRender();
+      calRenderMonth();
+    }
+  }).loadDeadlines(state.email, sessionToken);
+}
 
 function pwStrength(p) {
   if (!p) return { label: '', cls: '' };
@@ -350,6 +443,7 @@ async function logout() {
   sessionToken = ''; tempMigrationToken = ''; tempMigrationUsername = '';
   dlItems = []; calAllEvents = []; pdfDoc = null;
   friends = []; pendingIncoming = []; pendingOutgoing = [];
+  lastRefreshAt = 0;
 }
 
 /* ============================================================
@@ -553,6 +647,7 @@ function load() {
     document.getElementById('portal').style.display = 'none';
     document.body.setAttribute('data-logged-in', 'true');
     show('home');
+    lastRefreshAt = Date.now();
 
     document.getElementById('welcome').innerText = 'Good Day, ' + state.name;
     document.getElementById('term-value').innerText = data.school.term;
@@ -1296,7 +1391,7 @@ function renderNextDeadline() {
   else { label = 'In ' + days + ' days'; color = 'var(--primary)'; }
   const item = document.createElement('div');
   item.className = 'dash-task-item';
-  item.style.cssText = 'background:rgba(16,185,129,.08);border:1px solid ' + color + ';cursor:pointer;';
+  item.style.cssText = 'background:var(--primary-dim);border:1px solid ' + color + ';cursor:pointer;';
   item.addEventListener('click', () => show('calendar'));
   const titleWrap = document.createElement('div');
   titleWrap.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
