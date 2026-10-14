@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v4.3
+   School Hub Pro - student client, v4.4
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -192,6 +192,35 @@ function registerServiceWorker() {
   }).catch(err => {
     console.warn('[sw] registration failed:', err && err.message);
   });
+}
+
+/* ============================================================
+   LEGAL CONTENT — lazy-loaded from separate HTML files
+   ============================================================ */
+const legalContentCache = { privacy: false, terms: false };
+
+function loadLegalContent(paneName) {
+  if (legalContentCache[paneName]) return;
+  const pane = document.getElementById('legal-' + paneName);
+  if (!pane) return;
+  if (pane.dataset.loaded === 'true') return;
+
+  pane.innerHTML = '<p style="color:var(--sub);text-align:center;padding:24px 0;">Loading…</p>';
+
+  fetch('legal/' + paneName + '.html', { cache: 'force-cache' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function (html) {
+      pane.innerHTML = html;
+      pane.dataset.loaded = 'true';
+      legalContentCache[paneName] = true;
+    })
+    .catch(function (err) {
+      console.warn('[legal] failed to load ' + paneName, err);
+      pane.innerHTML = '<p style="color:var(--danger);text-align:center;padding:24px 0;">Could not load the ' + paneName + ' document. Please check your connection and try again.</p>';
+    });
 }
 
 /* ============================================================
@@ -2116,7 +2145,8 @@ function loadMyBugs() {
 })();
 
 /* ============================================================
-   LEGAL MODAL
+   LEGAL MODAL — Privacy Policy / Terms & Conditions
+   Content is lazy-loaded from separate HTML files.
    ============================================================ */
 (function wireLegalModal() {
   const btn = document.getElementById('legal-btn');
@@ -2126,6 +2156,7 @@ function loadMyBugs() {
 
   function openLegal(tab) {
     overlay.classList.remove('hidden');
+    loadLegalContent(tab || 'privacy');
     if (tab) setLegalTab(tab);
     document.body.style.overflow = 'hidden';
   }
@@ -2134,6 +2165,7 @@ function loadMyBugs() {
     document.body.style.overflow = '';
   }
   function setLegalTab(name) {
+    loadLegalContent(name);
     document.querySelectorAll('.legal-tab').forEach(t => {
       t.classList.toggle('active', t.dataset.legalTab === name);
     });
