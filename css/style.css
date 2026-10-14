@@ -134,7 +134,8 @@ body.offline #offline-banner { display: block; }
   font-size: 11px;
   letter-spacing: .5px;
 }
-.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start; }
+.quick-access-mobile { display: none; }
 .set-section { background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border); }
 .set-section h3 { margin: 0 0 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; }
 .set-section.danger-zone { border-color: rgba(239, 68, 68, .3); }
@@ -287,6 +288,7 @@ input[type="date"], input[type="time"] { min-height: 40px; -webkit-appearance: n
   #top-widgets { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 10px; margin-bottom: 20px; }
   .dash-grid { grid-template-columns: 1fr !important; }
   .settings-grid { grid-template-columns: 1fr !important; }
+  .quick-access-mobile { display: block; }
   .focus-history-grid { grid-template-columns: 1fr !important; }
   .avg-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
   .widget { padding: 12px; } .widget-value { font-size: 16px; }
@@ -333,7 +335,7 @@ textarea.set-input { resize: vertical; line-height: 1.55; font-size: 13px; font-
 @media (max-width: 768px) { .bug-row { grid-template-columns: 1fr; } }
 
 /* ============================================================
-   ACCENT COLOUR PICKER — 44px swatches (comfortable touch target)
+   ACCENT COLOUR PICKER — 44px swatches
    ============================================================ */
 .accent-picker {
   display: flex;
