@@ -1,5 +1,5 @@
 /* ============================================================
-   School Hub Pro - student client, v4.2
+   School Hub Pro - student client, v4.3
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -141,16 +141,14 @@ function toast(message, type, duration, action) {
 
 /* ============================================================
    BACK-BUTTON NAVIGATION
-   Pushes one history entry per view. Android hardware back pops
-   through the stack. When the stack bottoms out, we stop
-   intercepting and let the browser close the PWA / leave the page.
    ============================================================ */
 let historyPrimed = false;
 let suppressNextPush = false;
 
 function primeHistory(initialView) {
   try {
-    history.replaceState({ shpView: initialView || 'home' }, '');
+    const v = initialView || 'home';
+    history.replaceState({ shpView: v }, '', '#' + v);
     historyPrimed = true;
   } catch (e) { historyPrimed = false; }
 }
@@ -160,13 +158,13 @@ function pushViewHistory(view) {
   const cur = history.state;
   if (cur && cur.shpView === view) return;
   try {
-    history.pushState({ shpView: view }, '');
+    history.pushState({ shpView: view }, '', '#' + view);
   } catch (e) {}
 }
 
 function resetHistory() {
   historyPrimed = false;
-  try { history.replaceState(null, ''); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
 }
 
 window.addEventListener('popstate', function(e) {
@@ -174,17 +172,27 @@ window.addEventListener('popstate', function(e) {
 
   const st = e.state;
 
-  // No state or unrecognised state → we've popped past our own entries.
-  // Let the browser handle it: on Android PWA, this exits the app.
   if (!st || !st.shpView) return;
 
-  // Navigate to the view described by the popped-to state.
   if (st.shpView !== document.body.getAttribute('data-view')) {
     suppressNextPush = true;
     show(st.shpView);
     suppressNextPush = false;
   }
 });
+
+/* ============================================================
+   SERVICE WORKER REGISTRATION
+   ============================================================ */
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    console.log('[sw] registered, scope:', reg.scope);
+  }).catch(err => {
+    console.warn('[sw] registration failed:', err && err.message);
+  });
+}
 
 /* ============================================================
    OFFLINE PAGE
@@ -558,19 +566,6 @@ window.onload = () => {
     });
   }
 };
-
-/* ============================================================
-   SERVICE WORKER
-   ============================================================ */
-function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => {
-      console.warn('[sw] registration failed:', err && err.message);
-    });
-  });
-}
 
 /* ============================================================
    SILENT REFRESH
@@ -1008,7 +1003,6 @@ function load() {
     document.getElementById('portal').style.display = 'none';
     document.body.setAttribute('data-logged-in', 'true');
 
-    // Reset and prime the history stack for the new session.
     resetHistory();
     primeHistory('home');
     suppressNextPush = true;
