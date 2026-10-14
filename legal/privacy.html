@@ -1,42 +1,78 @@
 <h3>Privacy Policy</h3>
-<p class="legal-updated">Last updated: 12 October 2026</p>
+<p class="legal-updated">Last updated: 14 October 2026</p>
 
 <h4>1. About this project</h4>
-<p>School Hub Pro is an independently developed study tool, shared by invitation with a small group of users. It is not a commercial product and is not affiliated with any school, company, or organisation. Access is limited to invited users.</p>
+<p>School Hub Pro is an independently developed study tool. It is not a commercial product and is not affiliated with any school, company, or organisation. Anyone can create an account and use the app for free.</p>
 
-<h4>2. What we collect</h4>
-<p>When you use School Hub Pro, the following is stored:</p>
+<h4>2. How this app runs</h4>
+<p>School Hub Pro is made of three parts that work together. Understanding what each one does is the best way to see that nothing shady is happening.</p>
+
+<p><b>Part 1 — The page you see (the frontend)</b><br>
+This is the HTML, CSS, and JavaScript that loads in your browser. It is hosted on Cloudflare Pages, a free static-hosting service from Cloudflare. It does not run any code on Cloudflare's servers — Cloudflare only delivers the files to your browser, the same way a web server delivers an image. You can read every line of this code on the public GitHub repository linked in the app's footer.</p>
+
+<p><b>Part 2 — The app logic (the backend)</b><br>
+When you sign in, save a grade, add a deadline, or do anything else, your browser sends that request to a Google Apps Script backend. Apps Script is a scripting service run by Google. The code that lives there was written by the developer, is stored in the developer's own Google account, and is never visible to your browser. It runs on Google's servers, not on your device.</p>
+
+<p><b>Part 3 — Where the data lives (the database)</b><br>
+Everything you enter is stored in a single private Google Sheet owned by the developer. Only the developer can open that sheet. The backend reads from it and writes to it on your behalf. Nothing is stored anywhere else.</p>
+
+<p><b>How your sign-in actually works</b><br>
+When you type your password, the app hashes it right away and sends the hash to the backend. The backend compares it against the hash already stored in the sheet. If they match, the backend sends back a token — a long string of random characters signed with a secret key that only the backend knows. Your browser stores that token and sends it with every request. The token has an expiry date (7 days by default), and it can be cancelled at any time from Settings.</p>
+
+<p><b>What this means in practice</b><br>
+Because the app is built this way, there are several things it simply cannot do, even if the developer wanted to:</p>
 <ul>
-  <li><b>Account details</b> — your display name, email address, and a securely hashed copy of your password. The password is never stored in plain text and cannot be read by anyone, including the owner.</li>
+  <li>It cannot read your passwords. The hash is a one-way function — there is no way to reverse it back to the original password, even with the source code and the database.</li>
+  <li>It cannot access your files, camera, microphone, or location. The browser would ask you for permission first, and School Hub Pro never asks.</li>
+  <li>It cannot see what you do in other tabs. Browsers don't allow that.</li>
+  <li>It cannot send your data to a third party. The only network requests the app makes are to the backend and to two public services (Google Fonts for the font, and the Singapore government weather API for the weather widget). Both are read-only and receive no personal information.</li>
+  <li>It cannot charge you anything. There is no payment system anywhere in the code.</li>
+</ul>
+
+<p><b>How you can verify this yourself</b><br>
+Every claim in the paragraph above is verifiable from the app itself:</p>
+<ul>
+  <li>Press <b>F12</b> in your browser to open DevTools. Switch to the <b>Network</b> tab. Everything the app does over the network is listed there in real time. You will see requests to the backend URL, plus the two public services mentioned above, and nothing else.</li>
+  <li>Open the GitHub repository linked in the footer. It contains the exact JavaScript your browser is running, plus the backend code. Read it, fork it, or run it yourself.</li>
+  <li>If you are unsure about any part of the flow, close the tab and do not sign in. Nothing on this page requires you to trust it before you can inspect it.</li>
+</ul>
+
+<h4>3. What we collect</h4>
+<p>When you create an account and use School Hub Pro, the following is stored:</p>
+<ul>
+  <li><b>Account details</b> — your display name, email address, and a securely hashed copy of your password. The password is never stored in plain text and cannot be read by anyone, including the developer.</li>
   <li><b>Content you add</b> — grades, deadlines, personal calendar events, focus sessions, academic goals, and bug reports.</li>
   <li><b>Basic usage logs</b> — sign-in times and general actions (e.g. "grades saved"), kept for security and troubleshooting. Passwords and message contents are never logged.</li>
 </ul>
 
-<h4>3. What we do NOT collect</h4>
+<h4>4. What we do NOT collect</h4>
 <p>No location data, no device identifiers, no browsing history, no analytics, no advertising IDs, and no cookies for tracking. Nothing is collected outside what you enter into the app.</p>
 
-<h4>4. Where your data is stored</h4>
-<p>Data is stored in a private Google Sheets spreadsheet owned by the project owner, accessed through a Google Apps Script backend. Access is restricted to the owner. Google's own privacy policy applies to the underlying infrastructure.</p>
+<h4>5. Where your data is stored</h4>
+<p>Data is stored in a private Google Sheets spreadsheet owned by the developer, accessed through a Google Apps Script backend. Access is restricted to the developer. Google's own privacy policy applies to the underlying infrastructure.</p>
 
-<h4>5. Who can see your data</h4>
+<h4>6. Who can see your data</h4>
 <ul>
   <li><b>You</b> — full access to your own data.</li>
-  <li><b>The project owner</b> — can view accounts and content for support, safety, and maintenance.</li>
-  <li><b>Other members</b> — cannot see your data. The only exception is your display name, and only if you accept a friend request.</li>
+  <li><b>The developer</b> — can view accounts and content for support, safety, and maintenance.</li>
+  <li><b>Other users</b> — cannot see your data. The only exception is your display name, and only if you accept a friend request.</li>
 </ul>
 <p>Your data is never sold, shared, or transferred to any third party.</p>
 
-<h4>6. How long it is kept</h4>
+<h4>7. How long it is kept</h4>
 <p>Data is kept while your account is active. You can delete your account at any time from <b>Settings → Danger Zone</b>, which permanently removes everything associated with it.</p>
 
-<h4>7. Your rights</h4>
-<p>You can export everything you have added at any time from <b>Settings → Data Export</b> (CSV, JSON, or calendar format). You can request a correction or full deletion by asking the project owner directly.</p>
+<h4>8. Your rights</h4>
+<p>You can export everything you have added at any time from <b>Settings → Data Export</b> (CSV, JSON, or calendar format). You can request a correction or full deletion by asking the developer directly.</p>
 
-<h4>8. Security</h4>
+<h4>9. Security</h4>
 <p>Passwords are hashed with PBKDF2-HMAC-SHA256 using per-account salts. Sessions use signed tokens with expiry dates. All traffic is encrypted over HTTPS. No system is perfectly secure, so please use a strong, unique password that you do not reuse elsewhere.</p>
 
-<h4>9. Changes</h4>
-<p>If this policy changes in a meaningful way, members will be told through the app. Continued use after a change means you accept the updated policy.</p>
+<h4>10. Children</h4>
+<p>School Hub Pro is designed for students and is intended to be used with the knowledge of a parent or guardian. Because it stores only a display name and an email address, it collects no more personal information than is necessary for the app to function.</p>
 
-<h4>10. Contact</h4>
-<p>For any privacy question or data request, contact the project owner directly.</p>
+<h4>11. Changes</h4>
+<p>If this policy changes in a meaningful way, users will be told through the app. Continued use after a change means you accept the updated policy.</p>
+
+<h4>12. Contact</h4>
+<p>For any privacy question or data request, contact the developer directly using the contact link in the app's footer or the email address shown on the GitHub repository.</p>
