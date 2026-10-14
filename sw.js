@@ -3,7 +3,7 @@
    Caches the app shell so the PWA installs and works offline.
    Backend calls always go to the network — they are never cached.
    ============================================================ */
-const CACHE_NAME = 'shp-shell-v2';
+const CACHE_NAME = 'shp-shell-v3';
 const SHELL = [
   './',
   './index.html',
@@ -11,7 +11,9 @@ const SHELL = [
   './js/api.js',
   './js/app.js',
   './manifest.json',
-  './favicon.png'
+  './favicon.png',
+  './legal/privacy.html',
+  './legal/terms.html'
 ];
 
 /* Install: pre-cache the shell. Individual failures don't block install. */
