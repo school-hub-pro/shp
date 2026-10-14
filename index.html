@@ -14,7 +14,7 @@
     script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: https://i.postimg.cc https://school-hub-pro.github.io;
+    img-src 'self' data:;
     connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api-open.data.gov.sg;
     frame-src https://drive.google.com;
     worker-src 'self' blob:;
@@ -323,6 +323,7 @@
     <div id="view-settings" class="view">
       <h2 style="margin:0 0 20px;font-size:24px">Settings</h2>
       <div class="settings-grid">
+
         <div class="set-section">
           <h3>Account Info</h3>
           <form onsubmit="event.preventDefault(); saveProfile();">
@@ -341,80 +342,78 @@
           </form>
           <button type="button" class="btn-sec" style="margin-top:14px;" onclick="signOutOtherDevices()">🚪 Sign out of other devices</button>
         </div>
-        <div style="display:flex; flex-direction:column; gap:25px;">
 
-          <div class="set-section">
-            <h3>Appearance</h3>
-            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
-              Pick an accent colour for buttons, highlights, and links across the app.
-            </p>
-            <div class="accent-picker" id="accent-picker">
-              <button type="button" class="accent-swatch" data-accent="emerald" style="background:#10b981" title="Emerald" aria-label="Emerald"></button>
-              <button type="button" class="accent-swatch" data-accent="blue"    style="background:#3b82f6" title="Blue"    aria-label="Blue"></button>
-              <button type="button" class="accent-swatch" data-accent="purple"  style="background:#8b5cf6" title="Purple"  aria-label="Purple"></button>
-              <button type="button" class="accent-swatch" data-accent="orange"  style="background:#f59e0b" title="Orange"  aria-label="Orange"></button>
-              <button type="button" class="accent-swatch" data-accent="pink"    style="background:#ec4899" title="Pink"    aria-label="Pink"></button>
-            </div>
+        <div class="set-section">
+          <h3>Appearance</h3>
+          <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+            Pick an accent colour for buttons, highlights, and links across the app.
+          </p>
+          <div class="accent-picker" id="accent-picker">
+            <button type="button" class="accent-swatch" data-accent="emerald" style="background:#10b981" title="Emerald" aria-label="Emerald"></button>
+            <button type="button" class="accent-swatch" data-accent="blue"    style="background:#3b82f6" title="Blue"    aria-label="Blue"></button>
+            <button type="button" class="accent-swatch" data-accent="purple"  style="background:#8b5cf6" title="Purple"  aria-label="Purple"></button>
+            <button type="button" class="accent-swatch" data-accent="orange"  style="background:#f59e0b" title="Orange"  aria-label="Orange"></button>
+            <button type="button" class="accent-swatch" data-accent="pink"    style="background:#ec4899" title="Pink"    aria-label="Pink"></button>
           </div>
-
-          <div class="set-section">
-            <h3>Quick Access</h3>
-            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
-              Handy on phones — these pages are hidden from the bottom navigation bar.
-            </p>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('focus')">⏱️ Focus Mode</button>
-              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('grades')">📝 Enter Grades</button>
-              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('bugs')">🐛 Report a Bug</button>
-            </div>
-          </div>
-
-          <div class="set-section">
-            <h3>Reminders</h3>
-            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
-              Get a browser notification when a deadline is due today or tomorrow.
-            </p>
-            <button type="button" class="btn-sec" onclick="requestNotificationPermission()">Enable deadline reminders</button>
-          </div>
-
-          <div class="set-section">
-            <h3>Academic Goals</h3>
-            <form onsubmit="event.preventDefault(); addGoal();">
-              <div class="set-input-group" style="display:flex; gap:10px;">
-                <input type="text" class="set-input" placeholder="e.g. A1 for Math" id="goal-input" required>
-                <button type="submit" class="btn" style="width:auto; padding:10px 15px;">Add</button>
-              </div>
-            </form>
-            <div id="goal-list"></div>
-          </div>
-
-          <div class="set-section">
-            <h3>Friends (Social)</h3>
-            <form onsubmit="event.preventDefault(); addFriend();">
-              <div class="set-input-group" style="display:flex; gap:10px;">
-                <input type="email" class="set-input" id="friend-email-input" placeholder="Friend's Email" required>
-                <button type="submit" class="btn" id="btn-add-friend" style="width:auto; padding:10px 15px;">Add</button>
-              </div>
-            </form>
-            <div id="friends-list">
-              <div class="dl-empty" style="padding:20px 0;">Add friends to see their status.</div>
-            </div>
-            <button type="button" class="btn-sec" style="margin-top:14px;" onclick="show('bugs')">🐛 Report a Bug</button>
-          </div>
-
-          <div class="set-section">
-            <h3>Data Export</h3>
-            <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
-              Download your grades, deadlines, events, and focus history as a personal record.
-            </p>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportMyData('csv')">⬇ CSV</button>
-              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportMyData('json')">⬇ JSON</button>
-              <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportICS()">📅 Calendar (.ics)</button>
-            </div>
-          </div>
-
         </div>
+
+        <div class="set-section">
+          <h3>Reminders</h3>
+          <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+            Get a browser notification when a deadline is due today or tomorrow.
+          </p>
+          <button type="button" class="btn-sec" onclick="requestNotificationPermission()">Enable deadline reminders</button>
+        </div>
+
+        <div class="set-section quick-access-mobile">
+          <h3>Quick Access</h3>
+          <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+            Handy on phones — these pages are hidden from the bottom navigation bar.
+          </p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('focus')">⏱️ Focus Mode</button>
+            <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('grades')">📝 Enter Grades</button>
+            <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="show('bugs')">🐛 Report a Bug</button>
+          </div>
+        </div>
+
+        <div class="set-section">
+          <h3>Academic Goals</h3>
+          <form onsubmit="event.preventDefault(); addGoal();">
+            <div class="set-input-group" style="display:flex; gap:10px;">
+              <input type="text" class="set-input" placeholder="e.g. A1 for Math" id="goal-input" required>
+              <button type="submit" class="btn" style="width:auto; padding:10px 15px;">Add</button>
+            </div>
+          </form>
+          <div id="goal-list"></div>
+        </div>
+
+        <div class="set-section">
+          <h3>Friends (Social)</h3>
+          <form onsubmit="event.preventDefault(); addFriend();">
+            <div class="set-input-group" style="display:flex; gap:10px;">
+              <input type="email" class="set-input" id="friend-email-input" placeholder="Friend's Email" required>
+              <button type="submit" class="btn" id="btn-add-friend" style="width:auto; padding:10px 15px;">Add</button>
+            </div>
+          </form>
+          <div id="friends-list">
+            <div class="dl-empty" style="padding:20px 0;">Add friends to see their status.</div>
+          </div>
+          <button type="button" class="btn-sec" style="margin-top:14px;" onclick="show('bugs')">🐛 Report a Bug</button>
+        </div>
+
+        <div class="set-section">
+          <h3>Data Export</h3>
+          <p style="font-size:12px;color:var(--sub);line-height:1.55;margin:0 0 14px;">
+            Download your grades, deadlines, events, and focus history as a personal record.
+          </p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportMyData('csv')">⬇ CSV</button>
+            <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportMyData('json')">⬇ JSON</button>
+            <button type="button" class="btn-sec" style="width:auto;padding:10px 14px;font-size:12px" onclick="exportICS()">📅 Calendar (.ics)</button>
+          </div>
+        </div>
+
       </div>
 
       <div class="set-section danger-zone" style="margin-top:25px;">
