@@ -4,37 +4,15 @@
 <h4>1. About this project</h4>
 <p>School Hub Pro is an independently developed study tool. It is not a commercial product and is not affiliated with any school, company, or organisation. Anyone can create an account and use the app for free.</p>
 
-<h4>2. How this app runs</h4>
-<p>School Hub Pro is made of three parts that work together. Understanding what each one does is the best way to see that nothing shady is happening.</p>
-
-<p><b>Part 1 — The page you see (the frontend)</b><br>
-This is the HTML, CSS, and JavaScript that loads in your browser. It is hosted on Cloudflare Pages, a free static-hosting service from Cloudflare. It does not run any code on Cloudflare's servers — Cloudflare only delivers the files to your browser, the same way a web server delivers an image. You can read every line of this code on the public GitHub repository linked in the app's footer.</p>
-
-<p><b>Part 2 — The app logic (the backend)</b><br>
-When you sign in, save a grade, add a deadline, or do anything else, your browser sends that request to a Google Apps Script backend. Apps Script is a scripting service run by Google. The code that lives there was written by the developer, is stored in the developer's own Google account, and is never visible to your browser. It runs on Google's servers, not on your device.</p>
-
-<p><b>Part 3 — Where the data lives (the database)</b><br>
-Everything you enter is stored in a single private Google Sheet owned by the developer. Only the developer can open that sheet. The backend reads from it and writes to it on your behalf. Nothing is stored anywhere else.</p>
-
-<p><b>How your sign-in actually works</b><br>
-When you type your password, the app hashes it right away and sends the hash to the backend. The backend compares it against the hash already stored in the sheet. If they match, the backend sends back a token — a long string of random characters signed with a secret key that only the backend knows. Your browser stores that token and sends it with every request. The token has an expiry date (7 days by default), and it can be cancelled at any time from Settings.</p>
-
-<p><b>What this means in practice</b><br>
-Because the app is built this way, there are several things it simply cannot do, even if the developer wanted to:</p>
+<h4>2. Why this app is safe to use</h4>
+<p>We know it can feel risky to type a password into a site you have not seen before. Here are the guarantees that matter:</p>
 <ul>
-  <li>It cannot read your passwords. The hash is a one-way function — there is no way to reverse it back to the original password, even with the source code and the database.</li>
-  <li>It cannot access your files, camera, microphone, or location. The browser would ask you for permission first, and School Hub Pro never asks.</li>
-  <li>It cannot see what you do in other tabs. Browsers don't allow that.</li>
-  <li>It cannot send your data to a third party. The only network requests the app makes are to the backend and to two public services (Google Fonts for the font, and the Singapore government weather API for the weather widget). Both are read-only and receive no personal information.</li>
-  <li>It cannot charge you anything. There is no payment system anywhere in the code.</li>
-</ul>
-
-<p><b>How you can verify this yourself</b><br>
-Every claim in the paragraph above is verifiable from the app itself:</p>
-<ul>
-  <li>Press <b>F12</b> in your browser to open DevTools. Switch to the <b>Network</b> tab. Everything the app does over the network is listed there in real time. You will see requests to the backend URL, plus the two public services mentioned above, and nothing else.</li>
-  <li>Open the GitHub repository linked in the footer. It contains the exact JavaScript your browser is running, plus the backend code. Read it, fork it, or run it yourself.</li>
-  <li>If you are unsure about any part of the flow, close the tab and do not sign in. Nothing on this page requires you to trust it before you can inspect it.</li>
+  <li><b>We cannot read your password.</b> It is hashed the moment you submit it, using the same one-way algorithm (PBKDF2-HMAC-SHA256) that password managers use. Only the hash is stored, and the hash cannot be reversed.</li>
+  <li><b>We never ask for payment details.</b> No subscriptions, no in-app purchases, no card numbers. The app is completely free.</li>
+  <li><b>We never ask for personal identifiers.</b> No NRIC, no home address, no phone number, no government ID. Just a display name and an email address.</li>
+  <li><b>We never ask for device permissions.</b> No access to your camera, microphone, files, contacts, or location. If a browser prompt ever appears asking for these on our site, close the tab — it is not us.</li>
+  <li><b>You can leave at any time.</b> One button in Settings → Danger Zone permanently deletes your account and everything tied to it.</li>
+  <li><b>You can verify everything above.</b> The full source code and a detailed technical walkthrough are available via the <b>How this app works</b> tab, and the frontend code is public on GitHub.</li>
 </ul>
 
 <h4>3. What we collect</h4>
@@ -49,7 +27,7 @@ Every claim in the paragraph above is verifiable from the app itself:</p>
 <p>No location data, no device identifiers, no browsing history, no analytics, no advertising IDs, and no cookies for tracking. Nothing is collected outside what you enter into the app.</p>
 
 <h4>5. Where your data is stored</h4>
-<p>Data is stored in a private Google Sheets spreadsheet owned by the developer, accessed through a Google Apps Script backend. Access is restricted to the developer. Google's own privacy policy applies to the underlying infrastructure.</p>
+<p>Data is stored in a private spreadsheet owned by the developer, accessed through a Google-hosted backend. Access is restricted to the developer. Google's own privacy policy applies to the underlying infrastructure.</p>
 
 <h4>6. Who can see your data</h4>
 <ul>
